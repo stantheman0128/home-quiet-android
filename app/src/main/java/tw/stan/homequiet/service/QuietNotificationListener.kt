@@ -110,7 +110,8 @@ class QuietNotificationListener : NotificationListenerService() {
         if (summary || !shouldLog(sbn.key, sbn.isOngoing)) return
         val extras = sbn.notification.extras
         val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
-        val text = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+        val text = (extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)
+            ?: extras?.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()
         val reason = when {
             snap.insideFence && snap.wifiMatch -> "在家範圍內 · 住家 Wi-Fi"
             snap.wifiMatch && !snap.insideFence -> "住家 Wi-Fi"
@@ -122,7 +123,7 @@ class QuietNotificationListener : NotificationListenerService() {
                 packageName = sbn.packageName,
                 appLabel = AppCatalog.labelOf(this, sbn.packageName),
                 title = clip(title.ifBlank { "（無標題）" }),
-                text = clip(text),
+                text = text.trim().take(4000),
                 timestamp = System.currentTimeMillis(),
                 reason = reason,
             ),

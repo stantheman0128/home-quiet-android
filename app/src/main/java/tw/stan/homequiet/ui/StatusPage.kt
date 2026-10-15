@@ -253,6 +253,10 @@ fun StatusPage(
 fun SettingsPage(
     permissions: PermissionState,
     actions: PermissionActions,
+    updateResult: String? = null,
+    updateChecking: Boolean = false,
+    onCheckUpdate: () -> Unit = {},
+    onInstallUpdate: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showRestricted by rememberSaveable { mutableStateOf(false) }
@@ -268,6 +272,28 @@ fun SettingsPage(
     ) {
         Spacer(Modifier.height(12.dp))
         TextLabel("設定", size = 20, lineHeight = 26)
+        Spacer(Modifier.height(20.dp))
+        SectionLabel("更新")
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TextLabel("目前 $version", size = 14, modifier = Modifier.weight(1f))
+            TextLabel(
+                when {
+                    updateChecking -> "檢查中…"
+                    updateResult == null -> ""
+                    updateResult == "" -> "已是最新"
+                    updateResult == "error" -> "無法連線"
+                    else -> "有新版 $updateResult"
+                },
+                color = Mute, size = 13,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        if (!updateResult.isNullOrEmpty() && updateResult != "error") {
+            LineButton("下載並安裝 $updateResult", onClick = onInstallUpdate)
+        } else {
+            LineButton("檢查更新", onClick = onCheckUpdate, filled = false, enabled = !updateChecking)
+        }
         Spacer(Modifier.height(20.dp))
         SectionLabel("權限")
         Spacer(Modifier.height(4.dp))

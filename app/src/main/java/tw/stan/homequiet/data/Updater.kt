@@ -23,9 +23,16 @@ object Updater {
     val state = _state.asStateFlow()
     private var lastCheck = 0L
 
-    suspend fun check(context: Context) {
+    /** null = not checked, "" = up to date, "error" = failed, else newer version. */
+    private val _result = MutableStateFlow<String?>(null)
+    val result = _result.asStateFlow()
+    private val _checking = MutableStateFlow(false)
+    val checking = _checking.asStateFlow()
+
+    suspend fun check(context: Context, force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (now - lastCheck < 30 * 60_000L) return
+        if (!force && now - lastCheck < 30 * 60_000L) return
+        _checking.value = true
         lastCheck = now
         val found = withContext(Dispatchers.IO) {
             runCatching {
@@ -41,9 +48,15 @@ object Updater {
                     if (a.getString("name").endsWith(".apk")) { url = a.getString("browser_download_url"); break }
                 }
                 if (url != null && newer(tag, current(context))) UpdateInfo(tag, url) else null
-            }.getOrNull()
+            }
         }
-        _state.value = found
+        _checking.value = false
+        _state.value = found.getOrNull()
+        _result.value = when {
+            found.isFailure -> "error"
+            found.getOrNull() != null -> found.getOrNull()!!.version
+            else -> ""
+        }
     }
 
     suspend fun downloadAndInstall(context: Context) {
@@ -78,7 +91,7 @@ object Updater {
         )
     }
 
-    private fun current(context: Context): String =
+    fun current(context: Context): String =
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "0"
 
     fun newer(remote: String, local: String): Boolean {

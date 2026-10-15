@@ -178,11 +178,17 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                     MainTab.Settings -> SettingsPage(
                         permissions = permissions,
                         actions = actions,
+                        updateResult = vm.updateResult.collectAsState().value,
+                        updateChecking = vm.updateChecking.collectAsState().value,
+                        onCheckUpdate = vm::checkUpdateNow,
+                        onInstallUpdate = vm::installUpdate,
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Log -> LogPage(
                         notes = snapshot.log,
                         onClear = vm::clearLog,
+                        selected = snapshot.selectedPackages,
+                        onSelect = { vm.togglePackage(it, true) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

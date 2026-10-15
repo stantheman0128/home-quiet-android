@@ -65,6 +65,7 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
             val loaded = AppCatalog.load(getApplication())
             _apps.value = loaded
             _appsLoading.value = false
+            autoSelectGrok(loaded)
             AppIcons.prefetch(getApplication(), loaded.take(24).filter { it.installed }.map { it.packageName })
         }
     }
@@ -107,8 +108,27 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
 
     val update = tw.stan.homequiet.data.Updater.state
 
+    val updateResult = tw.stan.homequiet.data.Updater.result
+    val updateChecking = tw.stan.homequiet.data.Updater.checking
+    fun checkUpdateNow() {
+        viewModelScope.launch { tw.stan.homequiet.data.Updater.check(getApplication(), force = true) }
+    }
+
     fun installUpdate() {
         viewModelScope.launch { tw.stan.homequiet.data.Updater.downloadAndInstall(getApplication()) }
+    }
+
+    /** Once per install/upgrade: select every installed app whose package or label contains "grok". */
+    private fun autoSelectGrok(apps: List<AppInfo>) {
+        val prefs = getApplication<Application>().getSharedPreferences("migrations", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("grok_autoselect_v1", false)) return
+        val grok = apps.filter { it.installed && (it.packageName.contains("grok", true) || it.label.contains("grok", true)) }
+            .map { it.packageName }
+        if (grok.isNotEmpty()) {
+            store.setSelected(store.snapshot.value.selectedPackages + grok)
+            store.note("自動選取", grok.joinToString())
+        }
+        prefs.edit().putBoolean("grok_autoselect_v1", true).apply()
     }
 
     fun togglePackage(packageName: String, selected: Boolean) {

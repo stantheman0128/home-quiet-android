@@ -525,6 +525,18 @@ fun NavMark(tab: Int, selected: Boolean, modifier: Modifier = Modifier) {
                     }
                 }
             }
+            3 -> {
+                // gear: ring + 8 teeth
+                val c = Offset(size.width / 2, size.height / 2)
+                val r = 5.dp.toPx()
+                for (k in 0 until 8) {
+                    val a = Math.toRadians(k * 45.0)
+                    val dx = kotlin.math.cos(a).toFloat(); val dy = kotlin.math.sin(a).toFloat()
+                    drawLine(color, Offset(c.x + dx * r, c.y + dy * r), Offset(c.x + dx * (r + 3.dp.toPx()), c.y + dy * (r + 3.dp.toPx())), strokeWidth = 2.2.dp.toPx())
+                }
+                drawCircle(color, radius = r, center = c, style = Stroke(1.6.dp.toPx()))
+                drawCircle(color, radius = 1.8.dp.toPx(), center = c)
+            }
             else -> {
                 val y0 = 4.dp.toPx()
                 val gap = 4.5.dp.toPx()
