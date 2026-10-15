@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>在家安靜 · 應用</title>
+<style>
+  :root {
+    --bg: #121212;
+    --plate: #242424;
+    --lime: #D4FF3A;
+    --pink: #FF5FD2;
+    --paper: #F4F4F4;
+    --mute: #8A8A8A;
+    --ink: #121212;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--paper);
+  }
+  body {
+    font-family: "Noto Sans CJK TC", sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: monospace; }
+  a { text-decoration: none; color: inherit; }
+
+  .sb {
+    height: 42px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .sb .right { display: flex; align-items: center; gap: 6px; }
+  .sb .pct { font-size: 12px; }
+
+  .head { padding: 6px 16px 12px 18px; }
+  .flag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--lime);
+  }
+  .flag i {
+    width: 9px;
+    height: 9px;
+    background: var(--pink);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+  .titles {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .chips { display: flex; gap: 8px; }
+  .para {
+    height: 28px;
+    padding: 0 12px 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  }
+  .para b { font-size: 14px; font-weight: 700; letter-spacing: 0; }
+  .para.ghost { background: var(--plate); color: var(--paper); }
+  .para.hot { background: var(--lime); color: var(--ink); }
+
+  .list { padding: 0 12px 96px; }
+  .row {
+    height: 70px;
+    margin: 0 0 8px;
+    padding: 0 22px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    clip-path: polygon(12px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 12px 100%, 0 50%);
+  }
+  .row.on { background: var(--lime); color: var(--ink); }
+  .row.off { background: #2A2A2A; color: var(--paper); }
+  .row.split { margin-top: 16px; }
+  .ico {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  }
+  .nm { flex: 1; font-size: 14px; font-weight: 700; min-width: 0; }
+  .tg { flex: none; }
+
+  .nav { position: absolute; left: 16px; right: 22px; bottom: 16px; height: 58px; z-index: 3; }
+  .nav-back, .nav-front {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  }
+  .nav-back { background: var(--pink); transform: translate(6px, 6px); }
+  .nav-front {
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px 0 6px;
+  }
+  .nav-front a {
+    font-size: 14px;
+    font-weight: 700;
+    color: #3A3A3A;
+    letter-spacing: 0.06em;
+  }
+  .nav-front a.on span {
+    background: var(--ink);
+    color: var(--lime);
+    padding: 7px 14px 7px 16px;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+</style>
+</head>
+<body>
+  <div class="sb">
+    <span class="mono">9:41</span>
+    <span class="right">
+      <svg width="17" height="12" viewBox="0 0 17 12" aria-hidden="true">
+        <polygon points="0,12 2.6,12 2.6,8 0,8" fill="#F4F4F4"/>
+        <polygon points="4.4,12 7,12 7,5 4.4,5" fill="#F4F4F4"/>
+        <polygon points="8.8,12 11.4,12 11.4,2.5 8.8,2.5" fill="#F4F4F4"/>
+        <polygon points="13.2,12 15.8,12 15.8,0 13.2,0" fill="#D4FF3A"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" aria-hidden="true">
+        <polygon points="0.6,1.2 19.2,1.2 21.2,3.2 21.2,10.8 2.6,10.8 0.6,8.8" fill="none" stroke="#F4F4F4" stroke-width="1.3"/>
+        <polygon points="2.4,3.3 15.2,3.3 16.4,4.5 16.4,8.7 3.6,8.7 2.4,7.5" fill="#D4FF3A"/>
+        <polygon points="22.4,4 24.2,4 24.2,8 22.4,8" fill="#F4F4F4"/>
+      </svg>
+      <span class="mono pct">87%</span>
+    </span>
+  </div>
+
+  <header class="head">
+    <div class="flag"><i></i>在家</div>
+    <div class="titles">
+      <h1>應用</h1>
+      <div class="chips">
+        <span class="para ghost"><b class="mono">8</b>全部</span>
+        <span class="para hot"><b class="mono">4</b>靜音</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="list">
+    <div class="row on">
+      <i class="ico" style="background:#111">G</i>
+      <span class="nm">Grok Bot</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="38,6 45,13 38,20 31,13" fill="#D4FF3A"/>
+      </svg>
+    </div>
+    <div class="row on">
+      <i class="ico" style="background:#06C755">L</i>
+      <span class="nm">LINE</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="38,6 45,13 38,20 31,13" fill="#D4FF3A"/>
+      </svg>
+    </div>
+    <div class="row on">
+      <i class="ico" style="background:#E1306C">I</i>
+      <span class="nm">Instagram</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="38,6 45,13 38,20 31,13" fill="#D4FF3A"/>
+      </svg>
+    </div>
+    <div class="row on">
+      <i class="ico" style="background:#4A154B">S</i>
+      <span class="nm">Slack</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="38,6 45,13 38,20 31,13" fill="#D4FF3A"/>
+      </svg>
+    </div>
+    <div class="row off split">
+      <i class="ico" style="background:#EA4335">G</i>
+      <span class="nm">Gmail</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="16,6 23,13 16,20 9,13" fill="#F4F4F4"/>
+      </svg>
+    </div>
+    <div class="row off">
+      <i class="ico" style="background:#5865F2">D</i>
+      <span class="nm">Discord</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="16,6 23,13 16,20 9,13" fill="#F4F4F4"/>
+      </svg>
+    </div>
+    <div class="row off">
+      <i class="ico" style="background:#0084FF">M</i>
+      <span class="nm">Messenger</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="16,6 23,13 16,20 9,13" fill="#F4F4F4"/>
+      </svg>
+    </div>
+    <div class="row off">
+      <i class="ico" style="background:#2AABEE">T</i>
+      <span class="nm">Telegram</span>
+      <svg class="tg" width="54" height="26" viewBox="0 0 54 26" aria-hidden="true">
+        <polygon points="7,1 47,1 53,13 47,25 7,25 1,13" fill="#121212"/>
+        <polygon points="16,6 23,13 16,20 9,13" fill="#F4F4F4"/>
+      </svg>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-back"></div>
+    <div class="nav-front">
+      <a href="status.html">狀態</a>
+      <a class="on" href="apps.html"><span>應用</span></a>
+      <a href="log.html">紀錄</a>
+    </div>
+  </nav>
+</body>
+</html>

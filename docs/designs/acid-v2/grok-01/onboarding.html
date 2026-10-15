@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>在家安靜 · 通知存取權</title>
+<style>
+  :root {
+    --bg: #121212;
+    --lime: #D4FF3A;
+    --pink: #FF5FD2;
+    --paper: #F4F4F4;
+    --mute: #8A8A8A;
+    --ink: #121212;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px;
+    height: 844px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--paper);
+  }
+  body {
+    font-family: "Noto Sans CJK TC", sans-serif;
+    font-weight: 400;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: monospace; }
+  a { text-decoration: none; color: inherit; }
+
+  .sb {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 42px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    z-index: 2;
+  }
+  .sb .right { display: flex; align-items: center; gap: 6px; }
+
+  .scene { position: absolute; inset: 0; z-index: 0; }
+
+  .brand {
+    position: absolute;
+    top: 54px;
+    left: 20px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+  }
+  .brand i {
+    width: 9px;
+    height: 9px;
+    background: var(--pink);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  }
+
+  .steps {
+    position: absolute;
+    left: 20px;
+    top: 652px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chev {
+    width: 22px;
+    height: 16px;
+  }
+  .stepno {
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--mute);
+  }
+  .stepno b { color: var(--lime); font-weight: 700; }
+
+  h1 {
+    position: absolute;
+    left: 20px;
+    top: 686px;
+    z-index: 2;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--lime);
+  }
+
+  .cta {
+    position: absolute;
+    left: 16px;
+    right: 28px;
+    bottom: 32px;
+    height: 60px;
+    z-index: 2;
+  }
+  .cta i, .cta span {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 0 100%);
+  }
+  .cta i { background: var(--pink); transform: translate(6px, 6px); }
+  .cta span {
+    background: var(--lime);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+  }
+</style>
+</head>
+<body>
+  <div class="sb">
+    <span class="mono">9:41</span>
+    <span class="right">
+      <svg width="17" height="12" viewBox="0 0 17 12" aria-hidden="true">
+        <polygon points="0,12 2.6,12 2.6,8 0,8" fill="#F4F4F4"/>
+        <polygon points="4.4,12 7,12 7,5 4.4,5" fill="#F4F4F4"/>
+        <polygon points="8.8,12 11.4,12 11.4,2.5 8.8,2.5" fill="#F4F4F4"/>
+        <polygon points="13.2,12 15.8,12 15.8,0 13.2,0" fill="#D4FF3A"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" aria-hidden="true">
+        <polygon points="0.6,1.2 19.2,1.2 21.2,3.2 21.2,10.8 2.6,10.8 0.6,8.8" fill="none" stroke="#F4F4F4" stroke-width="1.3"/>
+        <polygon points="2.4,3.3 15.2,3.3 16.4,4.5 16.4,8.7 3.6,8.7 2.4,7.5" fill="#D4FF3A"/>
+        <polygon points="22.4,4 24.2,4 24.2,8 22.4,8" fill="#F4F4F4"/>
+      </svg>
+      <span class="mono">87%</span>
+    </span>
+  </div>
+
+  <svg class="scene" viewBox="0 0 390 844" width="390" height="844" aria-hidden="true">
+    <!-- lime stage, pink offset -->
+    <polygon points="22,348 330,322 366,354 366,588 52,612 16,576" fill="#FF5FD2" transform="translate(7,7)"/>
+    <polygon points="22,348 330,322 366,354 366,588 52,612 16,576" fill="#D4FF3A"/>
+
+    <!-- house, centered on the stage -->
+    <g transform="translate(104,372)">
+      <polygon points="58,10 70,22 58,34 46,22" fill="#FF5FD2"/>
+      <polygon points="74,2 82,10 74,18 66,10" fill="#F4F4F4"/>
+      <polygon points="38,108 156,108 156,198 38,198" fill="#FF5FD2"/>
+      <polygon points="108,18 128,18 128,80 108,80" fill="#121212"/>
+      <polygon points="108,18 128,18 128,30 108,30" fill="#FF5FD2"/>
+      <polygon points="90,34 170,104 10,104" fill="#121212"/>
+      <polygon points="32,104 150,104 150,192 32,192" fill="#121212"/>
+      <polygon points="78,134 108,126 108,192 78,192" fill="#FF5FD2"/>
+      <polygon points="58,122 72,136 58,150 44,136" fill="#F4F4F4"/>
+      <polygon points="116,124 138,124 142,128 142,146 116,146" fill="#F4F4F4"/>
+      <polygon points="100,162 106,168 100,174 94,168" fill="#D4FF3A"/>
+    </g>
+
+    <!-- tickets -->
+    <g>
+      <polygon points="26,100 186,100 206,120 206,162 26,162" fill="#FF5FD2" transform="translate(5,5)"/>
+      <polygon points="26,100 186,100 206,120 206,162 26,162" fill="#F4F4F4"/>
+      <polygon points="40,114 68,114 76,122 76,144 40,144" fill="#121212"/>
+      <text x="52" y="136" text-anchor="middle" fill="#F4F4F4" font-family="sans-serif" font-size="16" font-weight="700">G</text>
+      <rect x="86" y="118" width="108" height="7" fill="#121212"/>
+      <rect x="86" y="132" width="72" height="7" fill="#121212" fill-opacity="0.35"/>
+    </g>
+    <g>
+      <polygon points="44,176 204,176 224,196 224,238 44,238" fill="#121212" transform="translate(5,5)"/>
+      <polygon points="44,176 204,176 224,196 224,238 44,238" fill="#FF5FD2"/>
+      <polygon points="58,190 86,190 94,198 94,220 58,220" fill="#121212"/>
+      <text x="70" y="212" text-anchor="middle" fill="#F4F4F4" font-family="sans-serif" font-size="16" font-weight="700">L</text>
+      <rect x="104" y="194" width="108" height="7" fill="#121212"/>
+      <rect x="104" y="208" width="70" height="7" fill="#121212" fill-opacity="0.35"/>
+    </g>
+    <g>
+      <polygon points="22,252 176,252 196,272 196,314 22,314" fill="#D4FF3A" transform="translate(5,5)"/>
+      <polygon points="22,252 176,252 196,272 196,314 22,314" fill="#F4F4F4"/>
+      <polygon points="36,266 64,266 72,274 72,296 36,296" fill="#E1306C"/>
+      <text x="48" y="288" text-anchor="middle" fill="#F4F4F4" font-family="sans-serif" font-size="16" font-weight="700">I</text>
+      <rect x="82" y="270" width="100" height="7" fill="#121212"/>
+      <rect x="82" y="284" width="64" height="7" fill="#121212" fill-opacity="0.35"/>
+    </g>
+
+    <!-- blade: pink under, lime over. Stays right of the letter marks. -->
+    <polygon points="138,321 165,328 235,68 208,61" fill="#FF5FD2"/>
+    <polygon points="130,315 157,322 227,62 200,55" fill="#D4FF3A"/>
+  </svg>
+
+  <div class="brand"><i></i>在家安靜</div>
+
+  <div class="steps">
+    <svg class="chev" viewBox="0 0 22 16"><polygon points="1,1 12,8 1,15 6,15 17,8 6,1" fill="#D4FF3A"/></svg>
+    <svg class="chev" viewBox="0 0 22 16"><polygon points="1,1 12,8 1,15 6,15 17,8 6,1" fill="#6A6A6A"/></svg>
+    <svg class="chev" viewBox="0 0 22 16"><polygon points="1,1 12,8 1,15 6,15 17,8 6,1" fill="#6A6A6A"/></svg>
+    <svg class="chev" viewBox="0 0 22 16"><polygon points="1,1 12,8 1,15 6,15 17,8 6,1" fill="#6A6A6A"/></svg>
+    <span class="stepno mono"><b>1</b>/4</span>
+  </div>
+  <h1>通知存取權</h1>
+  <a class="cta" href="status.html"><i></i><span>允許</span></a>
+</body>
+</html>
