@@ -11,8 +11,10 @@ import org.json.JSONObject
 class QuietStore private constructor(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val lock = Any()
-    private val _snapshot = MutableStateFlow(readSnapshot())
+    private val _snapshot = MutableStateFlow(readSnapshot(context))
     val snapshot: StateFlow<QuietSnapshot> = _snapshot.asStateFlow()
+    /** Consecutive outside fixes required before the location latch flips off. */
+    private var outsideStreak = 0
 
     fun setOnboardingDone() {
         synchronized(lock) {
@@ -23,7 +25,7 @@ class QuietStore private constructor(context: Context) {
 
     fun setPaused(paused: Boolean) {
         synchronized(lock) {
-            prefs.edit().putBoolean(KEY_PAUSED, paused).apply()
+            prefs.edit().putBoolean(KEY_PAUSED, paused).commit()
             _snapshot.value = _snapshot.value.copy(paused = paused)
         }
     }
@@ -32,12 +34,15 @@ class QuietStore private constructor(context: Context) {
         synchronized(lock) {
             val cur = _snapshot.value
             val radius = meters.coerceIn(QuietSnapshot.MIN_RADIUS, QuietSnapshot.MAX_RADIUS)
-            val inside = insideAt(cur, cur.currentLat, cur.currentLon, radius, hard = true)
-            prefs.edit()
+            val hasPoint = cur.currentLat != null && cur.currentLon != null
+            val inside = if (hasPoint) insideAt(cur, cur.currentLat, cur.currentLon, radius, hard = true) else cur.geofenceInside
+            val fence = if (hasPoint) inside else cur.fenceInside
+            val edit = prefs.edit()
                 .putInt(KEY_RADIUS, radius)
                 .putBoolean(KEY_INSIDE, inside)
-                .apply()
-            _snapshot.value = cur.copy(radiusMeters = radius, geofenceInside = inside)
+            if (fence != null) edit.putBoolean(KEY_FENCE, fence)
+            edit.commit()
+            _snapshot.value = cur.copy(radiusMeters = radius, geofenceInside = inside, fenceInside = fence)
         }
     }
 
@@ -67,7 +72,8 @@ class QuietStore private constructor(context: Context) {
 
     fun setSelected(packages: Set<String>) {
         synchronized(lock) {
-            prefs.edit().putStringSet(KEY_PKGS, packages.toSet()).apply()
+            // Copy the set. putStringSet ignores the instance getStringSet just returned.
+            prefs.edit().putStringSet(KEY_PKGS, packages.toSet()).commit()
             _snapshot.value = _snapshot.value.copy(selectedPackages = packages.toSet())
         }
     }
@@ -87,7 +93,9 @@ class QuietStore private constructor(context: Context) {
                 .putLong(KEY_CUR_TIME, fixTime)
                 .putString(KEY_CUR_SSID, currentSsid)
                 .putBoolean(KEY_INSIDE, true)
-                .apply()
+                .putBoolean(KEY_FENCE, true)
+                .commit()
+            outsideStreak = 0
             _snapshot.value = cur.copy(
                 homeLat = lat,
                 homeLon = lon,
@@ -98,6 +106,7 @@ class QuietStore private constructor(context: Context) {
                 fixTime = fixTime,
                 currentSsid = currentSsid,
                 geofenceInside = true,
+                fenceInside = true,
             )
         }
     }
@@ -105,52 +114,97 @@ class QuietStore private constructor(context: Context) {
     fun setFix(lat: Double, lon: Double, time: Long, source: String = "定位", accuracy: Float = 0f) {
         synchronized(lock) {
             val cur = _snapshot.value
-            if (cur.currentLat != null && cur.currentLon != null) {
+            val homeLat = cur.homeLat ?: return
+            val homeLon = cur.homeLon ?: return
+            // A clearly older fix must not override a newer geofence event. Allow a few seconds of skew.
+            if (cur.fixTime > 0L && time + 5_000L < cur.fixTime) return
+            val distance = Geo.meters(homeLat, homeLon, lat, lon)
+            val decision = HomeSignals.locationInside(cur.geofenceInside, distance, accuracy, cur.radiusMeters) ?: return
+            val far = HomeSignals.hardExit(distance, accuracy)
+            val changed = decision != cur.geofenceInside || (far && cur.fenceInside != false)
+            if (!changed && cur.currentLat != null && cur.currentLon != null) {
                 val moved = Geo.meters(cur.currentLat, cur.currentLon, lat, lon)
                 if (moved < 8.0 && time - cur.fixTime < 30_000L && time >= cur.fixTime) return
             }
-            // An older fix must not override a newer geofence event.
-            if (time < cur.fixTime) return
-            // Coarse fixes (e.g. cell-tower, 500 m+) can't decide anything near a 120 m radius.
-            if (accuracy > maxOf(cur.radiusMeters * 2f, 300f)) return
-            val inside = decide(cur, lat, lon, accuracy)
-            val meters = cur.homeLat?.let { Geo.meters(it, cur.homeLon ?: 0.0, lat, lon) }
-            logState(cur, inside, source + (if (accuracy > 0f) " ±${accuracy.toInt()}" else ""), meters)
-            prefs.edit()
+            if (decision) {
+                outsideStreak = 0
+            } else if (cur.geofenceInside) {
+                outsideStreak += 1
+                // One drifted sample stays "home". A second sample, or a fix kilometers away, may leave.
+                if (outsideStreak < 2 && !far) {
+                    prefs.edit()
+                        .putString(KEY_CUR_LAT, lat.toPref())
+                        .putString(KEY_CUR_LON, lon.toPref())
+                        .putLong(KEY_CUR_TIME, time)
+                        .commit()
+                    _snapshot.value = cur.copy(currentLat = lat, currentLon = lon, fixTime = time)
+                    return
+                }
+            }
+            // GPS updates the location latch only. The Play geofence latch stays until EXIT,
+            // unless this fix is confidently kilometers away (the fence may have been missed).
+            val fence = if (far && !decision) false else cur.fenceInside
+            val next = cur.copy(
+                currentLat = lat,
+                currentLon = lon,
+                fixTime = time,
+                geofenceInside = decision,
+                fenceInside = fence,
+            )
+            logState(cur, next.atHome, source + (if (accuracy > 0f) " ±${accuracy.toInt()}" else ""), distance)
+            val edit = prefs.edit()
                 .putString(KEY_CUR_LAT, lat.toPref())
                 .putString(KEY_CUR_LON, lon.toPref())
                 .putLong(KEY_CUR_TIME, time)
-                .putBoolean(KEY_INSIDE, inside)
-                .apply()
+                .putBoolean(KEY_INSIDE, decision)
+            if (fence != null) edit.putBoolean(KEY_FENCE, fence)
+            edit.commit()
             _snapshot.value = _snapshot.value.copy(
                 currentLat = lat,
                 currentLon = lon,
                 fixTime = time,
-                geofenceInside = inside,
+                geofenceInside = decision,
+                fenceInside = fence,
             )
         }
     }
 
-    /** Play Services geofence transition: authoritative inside/outside, counts as a fresh fix. */
+    /** Play Services geofence transition. A GPS fix does not clear [QuietSnapshot.fenceInside] unless it is kilometers away. */
     fun setFenceEvent(inside: Boolean, lat: Double?, lon: Double?, time: Long): Boolean {
         synchronized(lock) {
             val cur = _snapshot.value
-            if (!inside && cur.homeLat != null && lat != null && lon != null) {
+            if (!inside) {
+                if (cur.homeLat == null || lat == null || lon == null) {
+                    // An EXIT with no point is not evidence. Ask for a fresh fix instead of leaving home.
+                    note("忽略離開", "地理圍欄沒有定位點")
+                    return false
+                }
                 val d = Geo.meters(cur.homeLat, cur.homeLon ?: 0.0, lat, lon)
                 if (d <= cur.radiusMeters + QuietSnapshot.EXIT_MARGIN_M) {
-                    // Jittery EXIT: the triggering fix is still near home. Ignore.
                     val n = DismissedNote(System.nanoTime(), STATE_PKG, "忽略離開", "地理圍欄 · ${d.toInt()} m", "", time, "")
                     val next = (listOf(n) + cur.log).take(QuietSnapshot.LOG_LIMIT)
-                    prefs.edit().putString(KEY_LOG, encodeLog(next)).apply()
+                    prefs.edit().putString(KEY_LOG, encodeLog(next)).commit()
                     _snapshot.value = cur.copy(log = next)
                     return false
                 }
             }
-            logState(cur, inside, "地理圍欄", null)
-            val e = prefs.edit().putBoolean(KEY_INSIDE, inside).putLong(KEY_CUR_TIME, time)
+            outsideStreak = 0
+            val prospective = cur.copy(
+                fenceInside = inside,
+                geofenceInside = inside,
+                fixTime = time,
+                currentLat = lat ?: cur.currentLat,
+                currentLon = lon ?: cur.currentLon,
+            )
+            logState(cur, prospective.atHome, "地理圍欄", null)
+            val e = prefs.edit()
+                .putBoolean(KEY_INSIDE, inside)
+                .putBoolean(KEY_FENCE, inside)
+                .putLong(KEY_CUR_TIME, time)
             if (lat != null && lon != null) e.putString(KEY_CUR_LAT, lat.toPref()).putString(KEY_CUR_LON, lon.toPref())
-            e.apply()
+            e.commit()
             _snapshot.value = _snapshot.value.copy(
+                fenceInside = inside,
                 geofenceInside = inside,
                 fixTime = time,
                 currentLat = lat ?: cur.currentLat,
@@ -163,16 +217,16 @@ class QuietStore private constructor(context: Context) {
     private var lastLogged: Boolean? = null
 
     /** Writes home/away changes to the Log tab (caller holds lock). */
-    private fun logState(cur: QuietSnapshot, inside: Boolean, source: String, meters: Double?) {
+    private fun logState(cur: QuietSnapshot, atHome: Boolean, source: String, meters: Double?) {
         if (cur.homeLat == null) return
         val known = lastLogged ?: prefs.getString(KEY_LOGGED, null)?.toBooleanStrictOrNull()
-        if (known == inside) return
-        lastLogged = inside
-        prefs.edit().putString(KEY_LOGGED, inside.toString()).apply()
+        if (known == atHome) return
+        lastLogged = atHome
+        prefs.edit().putString(KEY_LOGGED, atHome.toString()).apply()
         val note = DismissedNote(
             id = System.nanoTime(),
             packageName = STATE_PKG,
-            appLabel = if (inside) "到家" else "離家",
+            appLabel = if (atHome) "到家" else "離家",
             title = source + (meters?.let { " · ${it.toInt()} m" } ?: ""),
             text = "",
             timestamp = System.currentTimeMillis(),
@@ -186,16 +240,25 @@ class QuietStore private constructor(context: Context) {
     fun setPlayFence(on: Boolean) {
         synchronized(lock) {
             if (_snapshot.value.playFence == on) return
-            prefs.edit().putBoolean(KEY_PLAY, on).apply()
+            prefs.edit().putBoolean(KEY_PLAY, on).commit()
             _snapshot.value = _snapshot.value.copy(playFence = on)
         }
+    }
+
+    /**
+     * @param connected false only when Wi-Fi is actually off or disconnected.
+     * A hidden SSID (connected, name unreadable) must not clear a known home network.
+     */
+    fun applyWifi(connected: Boolean, ssid: String?) {
+        if (!connected) setSsid(null)
+        else if (!ssid.isNullOrBlank()) setSsid(ssid)
     }
 
     fun setSsid(ssid: String?) {
         synchronized(lock) {
             val cur = _snapshot.value
             if (cur.currentSsid == ssid) return
-            prefs.edit().putString(KEY_CUR_SSID, ssid).apply()
+            prefs.edit().putString(KEY_CUR_SSID, ssid).commit()
             val next = cur.copy(currentSsid = ssid)
             _snapshot.value = next
             if (cur.wifiAlsoCounts && cur.wifiMatch != next.wifiMatch) {
@@ -221,18 +284,6 @@ class QuietStore private constructor(context: Context) {
             prefs.edit().remove(KEY_LOG).apply()
             _snapshot.value = _snapshot.value.copy(log = emptyList())
         }
-    }
-
-    /**
-     * Hysteresis: enter when within radius; once inside, leave only when the fix is clearly
-     * outside (distance minus accuracy beyond radius + margin).
-     */
-    private fun decide(cur: QuietSnapshot, lat: Double, lon: Double, accuracy: Float): Boolean {
-        val homeLat = cur.homeLat ?: return false
-        val homeLon = cur.homeLon ?: return false
-        val d = Geo.meters(homeLat, homeLon, lat, lon)
-        return if (cur.geofenceInside) d - accuracy <= cur.radiusMeters + QuietSnapshot.EXIT_MARGIN_M
-        else d <= cur.radiusMeters
     }
 
     fun note(label: String, detail: String) {
@@ -263,12 +314,14 @@ class QuietStore private constructor(context: Context) {
         return distance <= limit
     }
 
-    private fun readSnapshot(): QuietSnapshot {
+    private fun readSnapshot(context: Context): QuietSnapshot {
         val selected = if (!prefs.contains(KEY_PKGS)) {
-            setOf(AppCatalog.GROK_PACKAGE)
+            setOf(AppCatalog.pinPackage(context))
         } else {
+            // Copy immediately. Mutating the set getStringSet returns does not persist.
             prefs.getStringSet(KEY_PKGS, emptySet())?.toSet() ?: emptySet()
         }
+        val locationInside = prefs.getBoolean(KEY_INSIDE, false)
         return QuietSnapshot(
             onboardingDone = prefs.getBoolean(KEY_ONBOARDING, false),
             homeLat = prefs.getString(KEY_HOME_LAT, null).prefDouble(),
@@ -284,7 +337,8 @@ class QuietStore private constructor(context: Context) {
             currentLon = prefs.getString(KEY_CUR_LON, null).prefDouble(),
             fixTime = prefs.getLong(KEY_CUR_TIME, 0L),
             currentSsid = prefs.getString(KEY_CUR_SSID, null)?.takeIf { it.isNotBlank() },
-            geofenceInside = prefs.getBoolean(KEY_INSIDE, false),
+            geofenceInside = locationInside,
+            fenceInside = if (prefs.contains(KEY_FENCE)) prefs.getBoolean(KEY_FENCE, false) else locationInside,
             playFence = prefs.getBoolean(KEY_PLAY, false),
             selectedPackages = selected,
             log = parseLog(prefs.getString(KEY_LOG, null)),
@@ -305,6 +359,7 @@ class QuietStore private constructor(context: Context) {
         private const val KEY_CUR_TIME = "cur_time"
         private const val KEY_CUR_SSID = "cur_ssid"
         private const val KEY_INSIDE = "inside"
+        private const val KEY_FENCE = "fence_inside"
         private const val KEY_PLAY = "play_fence"
         private const val KEY_SSIDS = "home_ssids"
         private const val KEY_LOGGED = "logged_inside"

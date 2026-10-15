@@ -13,11 +13,14 @@ import kotlinx.coroutines.launch
 import tw.stan.homequiet.data.AppCatalog
 import tw.stan.homequiet.data.AppInfo
 import tw.stan.homequiet.data.LocationHelper
+import tw.stan.homequiet.data.PackageMatch
 import tw.stan.homequiet.data.PermissionState
 import tw.stan.homequiet.data.Permissions
 import tw.stan.homequiet.data.QuietStore
+import tw.stan.homequiet.data.Updater
 import tw.stan.homequiet.data.WifiHelper
 import tw.stan.homequiet.service.MonitorController
+import tw.stan.homequiet.service.QuietNotificationListener
 
 class QuietViewModel(application: Application) : AndroidViewModel(application) {
     private val store = QuietStore.get(application)
@@ -48,14 +51,16 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onResume() {
         val app = getApplication<Application>()
+        AppCatalog.linkGrokBot(app)
         _permissions.value = Permissions.read(app)
         refreshSignals()
         refreshApps()
         MonitorController.start(app)
-        viewModelScope.launch { tw.stan.homequiet.data.Updater.check(app) }
-        if (_permissions.value.listener) runCatching {
-            android.service.notification.NotificationListenerService.requestRebind(
-                android.content.ComponentName(app, tw.stan.homequiet.service.QuietNotificationListener::class.java))
+        if (_permissions.value.listener) QuietNotificationListener.rebind(app)
+        viewModelScope.launch {
+            val pending = Updater.continuePending(app)
+            if (!pending.isNullOrBlank()) _message.value = pending
+            Updater.check(app)
         }
     }
 
@@ -106,16 +111,55 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
 
     fun removeSsid(ssid: String) = store.removeSsid(ssid)
 
-    val update = tw.stan.homequiet.data.Updater.state
+    val update = Updater.state
 
-    val updateResult = tw.stan.homequiet.data.Updater.result
-    val updateChecking = tw.stan.homequiet.data.Updater.checking
-    fun checkUpdateNow() {
-        viewModelScope.launch { tw.stan.homequiet.data.Updater.check(getApplication(), force = true) }
+    val updateResult = Updater.result
+    val updateChecking = Updater.checking
+    val updateError = Updater.error
+    val updatePrompts = Updater.prompts
+
+    fun showMessage(text: String) {
+        _message.value = text
     }
 
-    fun installUpdate() {
-        viewModelScope.launch { tw.stan.homequiet.data.Updater.downloadAndInstall(getApplication()) }
+    fun checkUpdateNow() {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            Updater.check(app, force = true)
+            val err = Updater.error.value
+            _message.value = when {
+                !err.isNullOrBlank() -> err
+                Updater.state.value != null -> null
+                else -> "已是最新版本"
+            }
+        }
+    }
+
+    fun onUpdateClicked(context: android.content.Context) {
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            Updater.markAwaitingPermission(context)
+            val intent = Updater.unknownSourcesIntent(context)
+            val opened = runCatching { context.startActivity(intent) }.isSuccess ||
+                runCatching {
+                    context.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }.isSuccess
+            _message.value = if (opened) {
+                "請允許「安裝未知的應用程式」，回到這裡後會繼續下載。"
+            } else {
+                "無法開啟安裝權限設定。請到系統設定允許此 App 安裝未知的應用程式。"
+            }
+            return
+        }
+        val ready = Updater.state.value?.filePath?.let { java.io.File(it) }
+        if (ready != null && ready.isFile) {
+            val ok = runCatching { context.startActivity(Updater.installIntent(context, ready)) }.isSuccess
+            if (!ok) _message.value = "無法開啟安裝程式"
+            return
+        }
+        viewModelScope.launch {
+            val err = Updater.downloadAndInstall(context.applicationContext)
+            if (!err.isNullOrBlank()) _message.value = err
+        }
     }
 
     /** Once per install/upgrade: select every installed app whose package or label contains "grok". */
@@ -132,8 +176,15 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePackage(packageName: String, selected: Boolean) {
+        val app = getApplication<Application>()
         val next = store.snapshot.value.selectedPackages.toMutableSet()
         if (selected) next.add(packageName) else next.remove(packageName)
+        if (PackageMatch.isGrokBot(packageName)) {
+            // The user's tap is authoritative, including turning Grok Bot back on.
+            AppCatalog.markGrokLinked(app)
+            if (selected) next.add(PackageMatch.BOT) else next.remove(PackageMatch.BOT)
+            if (!AppCatalog.isPackageInstalled(app, PackageMatch.LEGACY)) next.remove(PackageMatch.LEGACY)
+        }
         store.setSelected(next)
     }
 
@@ -188,6 +239,7 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         LocationHelper.lastKnown(app)?.let { fix ->
             store.setFix(fix.latitude, fix.longitude, fix.time, "定位", fix.accuracy)
         }
-        store.setSsid(WifiHelper.currentSsid(app))
+        val wifi = WifiHelper.read(app)
+        store.applyWifi(wifi.connected, wifi.ssid)
     }
 }

@@ -9,7 +9,11 @@ class BootReceiver : BroadcastReceiver() {
         when (intent?.action) {
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_MY_PACKAGE_REPLACED,
-            -> tw.stan.homequiet.service.Geofencing.register(context, force = true)
+            -> {
+                tw.stan.homequiet.data.AppCatalog.linkGrokBot(context)
+                Geofencing.register(context, force = true)
+                QuietNotificationListener.rebind(context)
+            }
         }
     }
 }

@@ -49,7 +49,13 @@ data class QuietSnapshot(
     val currentLon: Double? = null,
     val fixTime: Long = 0L,
     val currentSsid: String? = null,
+    /** Location latch: last accepted GPS / network fix was inside the radius. */
     val geofenceInside: Boolean = false,
+    /**
+     * Play geofence latch. Null only for hand-built snapshots; then [geofenceInside]
+     * stands in so older tests and callers keep working. A GPS fix must not clear this.
+     */
+    val fenceInside: Boolean? = null,
     /** Play Services geofence registered: its events are authoritative, no fix TTL. */
     val playFence: Boolean = false,
     val selectedPackages: Set<String> = emptySet(),
@@ -68,11 +74,25 @@ data class QuietSnapshot(
     }
 
     val wifiMatch: Boolean
-        get() = wifiAlsoCounts && currentSsid != null && currentSsid in homeSsids
+        get() {
+            if (!wifiAlsoCounts) return false
+            val current = currentSsid?.let { canonicalSsid(it) } ?: return false
+            if (current.isEmpty()) return false
+            return homeSsids.any { canonicalSsid(it) == current }
+        }
 
-    /** True only while the latest fix is fresh and inside the saved radius. */
+    /**
+     * Any one valid signal is enough: the Play geofence latch (no fix TTL),
+     * a fresh location fix inside the radius, or a saved home Wi-Fi.
+     * Signals are independent so a drifted GPS fix cannot erase the geofence.
+     */
     val insideFence: Boolean
-        get() = geofenceInside && (playFence || fixFresh())
+        get() {
+            val fenceOn = fenceInside ?: geofenceInside
+            val fence = playFence && fenceOn
+            val fix = geofenceInside && fixFresh()
+            return fence || fix
+        }
 
     val atHome: Boolean
         get() = insideFence || wifiMatch
@@ -104,5 +124,13 @@ data class QuietSnapshot(
         const val EXIT_HYSTERESIS_M = 20.0
         const val EXIT_MARGIN_M = 60.0
         const val LOG_LIMIT = 100
+
+        fun canonicalSsid(value: String): String {
+            var v = value.trim()
+            if (v.length >= 2 && v.startsWith("\"") && v.endsWith("\"")) {
+                v = v.substring(1, v.length - 1).trim()
+            }
+            return v
+        }
     }
 }

@@ -25,6 +25,7 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <package android:name="ai.x.grok" />
+        <package android:name="ai.x.grok.bot" />
     </queries>
 
     <application

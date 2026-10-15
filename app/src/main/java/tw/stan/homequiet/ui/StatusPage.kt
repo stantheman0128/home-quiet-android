@@ -255,6 +255,7 @@ fun SettingsPage(
     actions: PermissionActions,
     updateResult: String? = null,
     updateChecking: Boolean = false,
+    updateError: String? = null,
     onCheckUpdate: () -> Unit = {},
     onInstallUpdate: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -282,11 +283,15 @@ fun SettingsPage(
                     updateChecking -> "檢查中…"
                     updateResult == null -> ""
                     updateResult == "" -> "已是最新"
-                    updateResult == "error" -> "無法連線"
+                    updateResult == "error" -> if (updateError.isNullOrBlank()) "無法連線" else "檢查失敗"
                     else -> "有新版 $updateResult"
                 },
                 color = Mute, size = 13,
             )
+        }
+        if (!updateError.isNullOrBlank()) {
+            Spacer(Modifier.height(6.dp))
+            TextLabel(updateError, color = Faint, size = 12, lineHeight = 18)
         }
         Spacer(Modifier.height(10.dp))
         if (!updateResult.isNullOrEmpty() && updateResult != "error") {

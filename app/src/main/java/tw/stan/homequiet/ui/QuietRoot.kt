@@ -105,6 +105,12 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
             vm.consumeMessage()
         }
     }
+    LaunchedEffect(Unit) {
+        vm.updatePrompts.collect { intent ->
+            val opened = runCatching { context.startActivity(intent) }.isSuccess
+            if (!opened) vm.showMessage("無法開啟安裝程式，請再按一次「安裝」")
+        }
+    }
 
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     val tab = MainTab.entries[tabIndex.coerceIn(0, MainTab.entries.lastIndex)]
@@ -124,11 +130,19 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
         val update by vm.update.collectAsState()
         update?.let { u ->
             Row(
-                Modifier.fillMaxWidth().clickable(enabled = !u.downloading) { vm.installUpdate() }
+                Modifier.fillMaxWidth().clickable(enabled = !u.downloading) { vm.onUpdateClicked(context) }
                     .padding(horizontal = 24.dp, vertical = 12.dp),
             ) {
                 TextLabel("新版 ${u.version}", color = Paper, size = 13, modifier = Modifier.weight(1f))
-                TextLabel(if (u.downloading) "下載中…" else "更新", color = Paper, size = 13)
+                TextLabel(
+                    when {
+                        u.downloading -> "下載中…"
+                        u.filePath != null -> "安裝"
+                        else -> "更新"
+                    },
+                    color = Paper,
+                    size = 13,
+                )
             }
             Hairline()
         }
@@ -180,8 +194,9 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                         actions = actions,
                         updateResult = vm.updateResult.collectAsState().value,
                         updateChecking = vm.updateChecking.collectAsState().value,
+                        updateError = vm.updateError.collectAsState().value,
                         onCheckUpdate = vm::checkUpdateNow,
-                        onInstallUpdate = vm::installUpdate,
+                        onInstallUpdate = { vm.onUpdateClicked(context) },
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Log -> LogPage(
