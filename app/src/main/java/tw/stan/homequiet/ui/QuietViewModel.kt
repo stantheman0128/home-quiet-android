@@ -52,6 +52,7 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         refreshSignals()
         refreshApps()
         MonitorController.start(app)
+        viewModelScope.launch { tw.stan.homequiet.data.Updater.check(app) }
         if (_permissions.value.listener) runCatching {
             android.service.notification.NotificationListenerService.requestRebind(
                 android.content.ComponentName(app, tw.stan.homequiet.service.QuietNotificationListener::class.java))
@@ -94,6 +95,20 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         if (missing) {
             _message.value = "目前讀不到 Wi-Fi 名稱。仍會用定位判斷。"
         }
+    }
+
+    fun addCurrentSsid() {
+        val ssid = WifiHelper.currentSsid(getApplication()) ?: store.snapshot.value.currentSsid ?: return
+        store.addSsid(ssid)
+        if (!store.snapshot.value.wifiAlsoCounts) store.setWifiAlso(true, null)
+    }
+
+    fun removeSsid(ssid: String) = store.removeSsid(ssid)
+
+    val update = tw.stan.homequiet.data.Updater.state
+
+    fun installUpdate() {
+        viewModelScope.launch { tw.stan.homequiet.data.Updater.downloadAndInstall(getApplication()) }
     }
 
     fun togglePackage(packageName: String, selected: Boolean) {

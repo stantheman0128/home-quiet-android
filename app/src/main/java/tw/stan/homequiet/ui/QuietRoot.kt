@@ -1,5 +1,6 @@
 package tw.stan.homequiet.ui
 
+import androidx.compose.runtime.collectAsState
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -119,6 +120,17 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
             .background(Ink)
             .windowInsetsPadding(WindowInsets.safeDrawing.union(WindowInsets.ime)),
     ) {
+        val update by vm.update.collectAsState()
+        update?.let { u ->
+            Row(
+                Modifier.fillMaxWidth().clickable(enabled = !u.downloading) { vm.installUpdate() }
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+            ) {
+                TextLabel("新版 ${u.version}", color = Paper, size = 13, modifier = Modifier.weight(1f))
+                TextLabel(if (u.downloading) "下載中…" else "更新", color = Paper, size = 13)
+            }
+            Hairline()
+        }
         if (message != null) {
             TextLabel(
                 text = message.orEmpty(),
@@ -151,6 +163,8 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                         onRadius = vm::setRadius,
                         onPaused = vm::setPaused,
                         onWifi = vm::setWifiAlso,
+                        onAddSsid = vm::addCurrentSsid,
+                        onRemoveSsid = vm::removeSsid,
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Apps -> AppsPage(

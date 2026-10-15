@@ -39,6 +39,8 @@ fun StatusPage(
     onRadius: (Int) -> Unit,
     onPaused: (Boolean) -> Unit,
     onWifi: (Boolean) -> Unit,
+    onAddSsid: () -> Unit = {},
+    onRemoveSsid: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showRestricted by rememberSaveable { mutableStateOf(false) }
@@ -160,7 +162,7 @@ fun StatusPage(
             TextLabel(formatCoords(snapshot.homeLat, snapshot.homeLon), size = 16)
             Spacer(Modifier.height(4.dp))
             TextLabel(
-                text = snapshot.homeSsid?.let { "住家 Wi-Fi · $it" } ?: "尚未記住 Wi-Fi 名稱",
+                text = if (snapshot.homeSsids.isEmpty()) "未設定住家 Wi-Fi" else "住家 Wi-Fi · ${snapshot.homeSsids.size}",
                 color = Mute,
                 size = 13,
             )
@@ -196,16 +198,23 @@ fun StatusPage(
 
         Spacer(Modifier.height(12.dp))
         ToggleRow(
-            title = "連上住家 Wi-Fi 也算在家",
-            subtitle = "連上設定住家時的 Wi-Fi",
+            title = "住家 Wi-Fi 也算在家",
+            subtitle = "連上任一個即可",
             checked = snapshot.wifiAlsoCounts,
             onCheckedChange = onWifi,
         )
-        TextLabel(
-            text = snapshot.currentSsid?.let { "現在的 Wi-Fi · $it" } ?: "現在沒有連上可辨識的 Wi-Fi",
-            color = Faint,
-            size = 12,
-        )
+        snapshot.homeSsids.sorted().forEach { ssid ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextLabel(ssid, size = 14, color = if (ssid == snapshot.currentSsid) Paper else Mute, modifier = Modifier.weight(1f))
+                QuietTextButton("移除", onClick = { onRemoveSsid(ssid) })
+            }
+        }
+        val cur = snapshot.currentSsid
+        if (cur != null && cur !in snapshot.homeSsids) {
+            QuietTextButton("＋ 加入 $cur", onClick = onAddSsid)
+        } else if (cur == null) {
+            TextLabel("未連上 Wi-Fi", color = Faint, size = 12)
+        }
 
         Spacer(Modifier.height(28.dp))
         Hairline()

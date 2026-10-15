@@ -45,11 +45,23 @@ class QuietStore private constructor(context: Context) {
         synchronized(lock) {
             val cur = _snapshot.value
             val ssid = captureSsid ?: cur.homeSsid
+            val set = if (captureSsid != null) cur.homeSsids + captureSsid else cur.homeSsids
             prefs.edit()
                 .putBoolean(KEY_WIFI, enabled)
                 .putString(KEY_HOME_SSID, ssid)
+                .putStringSet(KEY_SSIDS, set)
                 .apply()
-            _snapshot.value = cur.copy(wifiAlsoCounts = enabled, homeSsid = ssid)
+            _snapshot.value = cur.copy(wifiAlsoCounts = enabled, homeSsid = ssid, homeSsids = set)
+        }
+    }
+
+    fun addSsid(ssid: String) = editSsids { it + ssid }
+    fun removeSsid(ssid: String) = editSsids { it - ssid }
+    private fun editSsids(f: (Set<String>) -> Set<String>) {
+        synchronized(lock) {
+            val next = f(_snapshot.value.homeSsids).filter { it.isNotBlank() }.toSet()
+            prefs.edit().putStringSet(KEY_SSIDS, next).apply()
+            _snapshot.value = _snapshot.value.copy(homeSsids = next)
         }
     }
 
@@ -69,6 +81,7 @@ class QuietStore private constructor(context: Context) {
                 .putString(KEY_HOME_LAT, lat.toPref())
                 .putString(KEY_HOME_LON, lon.toPref())
                 .putString(KEY_HOME_SSID, homeSsid)
+                .putStringSet(KEY_SSIDS, if (ssid != null) cur.homeSsids + ssid else cur.homeSsids)
                 .putString(KEY_CUR_LAT, lat.toPref())
                 .putString(KEY_CUR_LON, lon.toPref())
                 .putLong(KEY_CUR_TIME, fixTime)
@@ -79,6 +92,7 @@ class QuietStore private constructor(context: Context) {
                 homeLat = lat,
                 homeLon = lon,
                 homeSsid = homeSsid,
+                homeSsids = if (ssid != null) cur.homeSsids + ssid else cur.homeSsids,
                 currentLat = lat,
                 currentLon = lon,
                 fixTime = fixTime,
@@ -221,6 +235,8 @@ class QuietStore private constructor(context: Context) {
             paused = prefs.getBoolean(KEY_PAUSED, false),
             wifiAlsoCounts = prefs.getBoolean(KEY_WIFI, false),
             homeSsid = prefs.getString(KEY_HOME_SSID, null)?.takeIf { it.isNotBlank() },
+            homeSsids = prefs.getStringSet(KEY_SSIDS, null)?.toSet()
+                ?: setOfNotNull(prefs.getString(KEY_HOME_SSID, null)?.takeIf { it.isNotBlank() }),
             currentLat = prefs.getString(KEY_CUR_LAT, null).prefDouble(),
             currentLon = prefs.getString(KEY_CUR_LON, null).prefDouble(),
             fixTime = prefs.getLong(KEY_CUR_TIME, 0L),
@@ -247,6 +263,7 @@ class QuietStore private constructor(context: Context) {
         private const val KEY_CUR_SSID = "cur_ssid"
         private const val KEY_INSIDE = "inside"
         private const val KEY_PLAY = "play_fence"
+        private const val KEY_SSIDS = "home_ssids"
         private const val KEY_LOGGED = "logged_inside"
         const val STATE_PKG = "tw.stan.homequiet.state"
         private const val KEY_PKGS = "packages"

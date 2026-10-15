@@ -44,6 +44,7 @@ data class QuietSnapshot(
     val paused: Boolean = false,
     val wifiAlsoCounts: Boolean = false,
     val homeSsid: String? = null,
+    val homeSsids: Set<String> = emptySet(),
     val currentLat: Double? = null,
     val currentLon: Double? = null,
     val fixTime: Long = 0L,
@@ -67,7 +68,7 @@ data class QuietSnapshot(
     }
 
     val wifiMatch: Boolean
-        get() = wifiAlsoCounts && !homeSsid.isNullOrBlank() && homeSsid == currentSsid
+        get() = wifiAlsoCounts && currentSsid != null && currentSsid in homeSsids
 
     /** True only while the latest fix is fresh and inside the saved radius. */
     val insideFence: Boolean
