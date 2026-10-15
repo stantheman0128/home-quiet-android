@@ -45,6 +45,7 @@ private enum class MainTab(val label: String) {
     Status("狀態"),
     Apps("應用"),
     Log("紀錄"),
+    Settings("設定"),
 }
 
 @Composable
@@ -172,6 +173,11 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                         loading = appsLoading,
                         selected = snapshot.selectedPackages,
                         onToggle = vm::togglePackage,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    MainTab.Settings -> SettingsPage(
+                        permissions = permissions,
+                        actions = actions,
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Log -> LogPage(

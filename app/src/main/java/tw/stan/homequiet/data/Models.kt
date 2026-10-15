@@ -102,6 +102,7 @@ data class QuietSnapshot(
         const val RADIUS_STEP = 10
         const val DEFAULT_RADIUS = 120
         const val EXIT_HYSTERESIS_M = 20.0
+        const val EXIT_MARGIN_M = 60.0
         const val LOG_LIMIT = 100
     }
 }

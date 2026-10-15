@@ -46,6 +46,8 @@ class QuietNotificationListener : NotificationListenerService() {
 
     override fun onListenerDisconnected() {
         connected = false
+        // Ask the system to bind us again (happens after updates / memory pressure).
+        runCatching { requestRebind(android.content.ComponentName(this, QuietNotificationListener::class.java)) }
         collectJob?.cancel()
         collectJob = null
         super.onListenerDisconnected()
@@ -83,10 +85,25 @@ class QuietNotificationListener : NotificationListenerService() {
         refreshSignals()
         val store = QuietStore.get(this)
         val snap = store.snapshot.value
-        if (snap.paused) return
-        if (sbn.packageName !in snap.selectedPackages) return
-        if (!snap.atHome) return
-        if (tooSoon(sbn.key)) return
+        if (sbn.packageName !in snap.selectedPackages) {
+            if (sbn.packageName.contains("grok", true) && shouldLog("unsel:" + sbn.packageName, false))
+                store.note("未選取", sbn.packageName)
+            return
+        }
+        if (snap.paused || !snap.atHome) {
+            // Visible decision so flakiness can be diagnosed from the Log tab.
+            if (shouldLog("pass:" + sbn.packageName, false)) {
+                val why = when {
+                    snap.paused -> "安靜模式關閉"
+                    else -> "判斷為外出" + (snap.distanceMeters()?.let { " · ${it.toInt()} m" } ?: "") +
+                        (snap.currentSsid?.let { " · Wi-Fi $it" } ?: "")
+                }
+                store.note("未清除 ${AppCatalog.labelOf(this, sbn.packageName)}", why)
+            }
+            return
+        }
+        // Always cancel, including rapid updates to the same key and group summaries.
+        tooSoon(sbn.key)
         runCatching { cancelNotification(sbn.key) }
         Log.i(TAG, "cancel ${sbn.packageName}")
         val summary = sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0
@@ -115,7 +132,7 @@ class QuietNotificationListener : NotificationListenerService() {
     private fun refreshSignals() {
         val store = QuietStore.get(this)
         LocationHelper.lastKnown(this)?.let { fix ->
-            store.setFix(fix.latitude, fix.longitude, fix.time)
+            store.setFix(fix.latitude, fix.longitude, fix.time, "通知時定位", fix.accuracy)
         }
         WifiHelper.currentSsid(this)?.let(store::setSsid)
     }

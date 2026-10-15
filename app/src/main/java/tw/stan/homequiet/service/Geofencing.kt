@@ -41,7 +41,7 @@ object Geofencing {
     @SuppressLint("MissingPermission")
     fun seed(app: Context) {
         val store = QuietStore.get(app)
-        val lastKnown = { tw.stan.homequiet.data.LocationHelper.lastKnown(app)?.let { store.setFix(it.latitude, it.longitude, it.time, "定位") } }
+        val lastKnown = { tw.stan.homequiet.data.LocationHelper.lastKnown(app)?.let { store.setFix(it.latitude, it.longitude, it.time, "定位", it.accuracy) } }
         if (!Permissions.hasFine(app)) return
         if (!playAvailable(app)) { lastKnown(); return }
         runCatching {
@@ -49,7 +49,7 @@ object Geofencing {
             LocationServices.getFusedLocationProviderClient(app)
                 .getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
                 .addOnSuccessListener { loc ->
-                    if (loc != null) store.setFix(loc.latitude, loc.longitude, System.currentTimeMillis(), "即時定位") else lastKnown()
+                    if (loc != null) store.setFix(loc.latitude, loc.longitude, System.currentTimeMillis(), "即時定位", loc.accuracy) else lastKnown()
                 }
                 .addOnFailureListener { lastKnown() }
         }.onFailure { lastKnown() }

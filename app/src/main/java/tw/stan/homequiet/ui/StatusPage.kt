@@ -72,14 +72,14 @@ fun StatusPage(
             TextLabel("在家安靜", color = Mute, size = 13, spacing = 0.6f)
             Spacer(Modifier.weight(1f))
             TextLabel(
-                text = "暫停",
-                color = if (snapshot.paused) Paper else Mute,
+                text = "安靜模式",
+                color = if (!snapshot.paused) Paper else Mute,
                 size = 13,
             )
             Spacer(Modifier.width(8.dp))
             Switch(
-                checked = snapshot.paused,
-                onCheckedChange = onPaused,
+                checked = !snapshot.paused,
+                onCheckedChange = { on -> onPaused(!on) },
                 colors = quietSwitchColors(),
             )
         }
@@ -87,7 +87,7 @@ fun StatusPage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp),
+                .height(250.dp),
             contentAlignment = Alignment.Center,
         ) {
             HomeGlyph(
@@ -101,8 +101,8 @@ fun StatusPage(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 TextLabel(
                     text = number,
-                    size = 48,
-                    lineHeight = 52,
+                    size = 56,
+                    lineHeight = 60,
                     weight = FontWeight.Light,
                     spacing = -1f,
                     align = TextAlign.Center,
@@ -131,12 +131,23 @@ fun StatusPage(
         if (snapshot.paused) {
             Spacer(Modifier.height(6.dp))
             TextLabel(
-                text = "已暫停",
+                text = "安靜模式已關閉",
                 modifier = Modifier.fillMaxWidth(),
                 color = Paper,
                 size = 13,
                 align = TextAlign.Center,
             )
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center) {
+            listOfNotNull(
+                distance?.let { "距家 ${it.toInt()} m" },
+                "範圍 ${snapshot.radiusMeters} m",
+                snapshot.currentSsid?.let { "Wi-Fi $it" + if (snapshot.wifiMatch) " ✓" else "" },
+            ).forEachIndexed { i, t ->
+                if (i > 0) TextLabel("  ·  ", color = Faint, size = 15)
+                TextLabel(t, color = Paper, size = 15)
+            }
         }
         fixAgeHint(snapshot)?.let { hint ->
             Spacer(Modifier.height(4.dp))
@@ -235,7 +246,28 @@ fun StatusPage(
         LineButton("選擇應用程式", onClick = onOpenApps, filled = false)
 
         Spacer(Modifier.height(28.dp))
-        Hairline()
+    }
+}
+
+@Composable
+fun SettingsPage(
+    permissions: PermissionState,
+    actions: PermissionActions,
+    modifier: Modifier = Modifier,
+) {
+    var showRestricted by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val version = androidx.compose.runtime.remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
+    }
+    Column(
+        modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp),
+    ) {
+        Spacer(Modifier.height(12.dp))
+        TextLabel("設定", size = 20, lineHeight = 26)
         Spacer(Modifier.height(20.dp))
         SectionLabel("權限")
         Spacer(Modifier.height(4.dp))
