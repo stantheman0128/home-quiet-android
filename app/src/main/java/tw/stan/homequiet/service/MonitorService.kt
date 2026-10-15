@@ -35,13 +35,24 @@ object MonitorController {
     fun start(context: Context) {
         if (!Permissions.hasFine(context)) return
         val app = context.applicationContext
-        val intent = Intent(app, MonitorService::class.java)
+        // Play Services geofence first; it calls startFallback()/stop() with the outcome.
         Geofencing.register(app)
+    }
+
+    /** LocationManager fallback, only when the Play Services geofence is unavailable or failed. */
+    fun startFallback(context: Context) {
+        if (!Permissions.hasFine(context)) return
+        val app = context.applicationContext
+        val intent = Intent(app, MonitorService::class.java)
         try {
             ContextCompat.startForegroundService(app, intent)
         } catch (_: Exception) {
             // Background start limits, or location permission raced away.
         }
+    }
+
+    fun stop(context: Context) {
+        runCatching { context.applicationContext.stopService(Intent(context.applicationContext, MonitorService::class.java)) }
     }
 }
 
@@ -80,9 +91,7 @@ class MonitorService : Service() {
         val store = QuietStore.get(this)
         promote(store.snapshot.value)
         scope.launch {
-            store.snapshot.collect { snap ->
-                if (foreground) promote(snap)
-            }
+            // Status lives in the app UI; the notification text never changes.
         }
     }
 
@@ -107,7 +116,7 @@ class MonitorService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        MonitorController.start(applicationContext)
+        if (Geofencing.mode(applicationContext) == "fallback") MonitorController.startFallback(applicationContext)
     }
 
     private fun promote(snap: QuietSnapshot) {
@@ -125,7 +134,7 @@ class MonitorService : Service() {
 
     private fun ensureChannel(manager: NotificationManager) {
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-        val channel = NotificationChannel(CHANNEL_ID, "運作狀態", NotificationManager.IMPORTANCE_LOW).apply {
+        val channel = NotificationChannel(CHANNEL_ID, "背景定位（備援）", NotificationManager.IMPORTANCE_MIN).apply {
             description = "維持定位，用來判斷是否在家。不會發聲。"
             setShowBadge(false)
             setSound(null, null)
@@ -144,7 +153,7 @@ class MonitorService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle("在家安靜")
-            .setContentText(statusText(snap))
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -201,7 +210,7 @@ class MonitorService : Service() {
     }
 
     companion object {
-        private const val CHANNEL_ID = "homequiet.monitor"
+        private const val CHANNEL_ID = "homequiet.monitor.min"
         private const val NOTIF_ID = 7101
         private const val UPDATE_INTERVAL_MS = 15_000L
         private const val UPDATE_DISTANCE_M = 20f

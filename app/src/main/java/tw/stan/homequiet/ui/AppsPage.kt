@@ -57,10 +57,10 @@ fun AppsPage(
 
     Column(modifier.fillMaxSize().padding(horizontal = 24.dp)) {
         Spacer(Modifier.height(12.dp))
-        TextLabel("哪些通知要安靜", size = 28, lineHeight = 34)
+        TextLabel("要安靜的應用", size = 20, lineHeight = 26)
         Spacer(Modifier.height(8.dp))
         TextLabel(
-            "人在家，或符合住家 Wi-Fi 條件時，這些應用的通知會被清掉。預設已選 Grok Bot。",
+            "在家時清除這些通知",
             color = Mute,
             size = 14,
             lineHeight = 21,

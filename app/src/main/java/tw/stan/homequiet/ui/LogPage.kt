@@ -40,7 +40,7 @@ fun LogPage(
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                TextLabel("清除紀錄", size = 28, lineHeight = 34)
+                TextLabel("紀錄", size = 20, lineHeight = 26)
                 Spacer(Modifier.height(4.dp))
                 TextLabel(
                     text = if (notes.isEmpty()) "尚無紀錄" else "${notes.size} 則",
@@ -70,10 +70,10 @@ fun LogPage(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     DotMark(lit = false)
                     Spacer(Modifier.height(16.dp))
-                    TextLabel("尚無紀錄", size = 18, align = TextAlign.Center)
+                    TextLabel("尚無紀錄", size = 16, align = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
                     TextLabel(
-                        text = "人在家、而且該應用有被選取時，被清掉的通知會留在這裡。",
+                        text = "被清除的通知會列在這裡",
                         color = Mute,
                         size = 14,
                         lineHeight = 21,

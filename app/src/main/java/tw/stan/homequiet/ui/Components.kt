@@ -83,13 +83,13 @@ fun presenceLabel(presence: Presence): String = when (presence) {
 fun presenceDetail(snapshot: QuietSnapshot): String = when (snapshot.presence) {
     Presence.Home -> snapshot.homeReason() ?: "在家"
     Presence.Away -> "在範圍外"
-    Presence.NoFix -> "開啟定位後才能判斷"
-    Presence.Stale -> "最後的位置太舊，先不當作在家"
-    Presence.NoHome -> "把目前位置設成家，範圍就會開始算"
+    Presence.NoFix -> "需要定位"
+    Presence.Stale -> "位置過舊"
+    Presence.NoHome -> "尚未設定住家"
 }
 
 fun fixAgeHint(snapshot: QuietSnapshot, now: Long = System.currentTimeMillis()): String? {
-    if (snapshot.fixTime <= 0L || snapshot.homeLat == null) return null
+    if (snapshot.playFence || snapshot.fixTime <= 0L || snapshot.homeLat == null) return null
     val minutes = ((now - snapshot.fixTime) / 60_000L).toInt()
     if (minutes < 2) return null
     return if (minutes < 60) "${minutes} 分鐘前的位置" else "${minutes / 60} 小時前的位置"

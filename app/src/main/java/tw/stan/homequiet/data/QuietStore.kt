@@ -95,7 +95,8 @@ class QuietStore private constructor(context: Context) {
                 val moved = Geo.meters(cur.currentLat, cur.currentLon, lat, lon)
                 if (moved < 8.0 && time - cur.fixTime < 30_000L && time >= cur.fixTime) return
             }
-            val inside = insideAt(cur, lat, lon, cur.radiusMeters, hard = false)
+            // With a live Play Services geofence, only its ENTER/EXIT events decide inside/outside.
+            val inside = if (cur.playFence) cur.geofenceInside else insideAt(cur, lat, lon, cur.radiusMeters, hard = false)
             prefs.edit()
                 .putString(KEY_CUR_LAT, lat.toPref())
                 .putString(KEY_CUR_LON, lon.toPref())
@@ -124,6 +125,14 @@ class QuietStore private constructor(context: Context) {
                 currentLat = lat ?: cur.currentLat,
                 currentLon = lon ?: cur.currentLon,
             )
+        }
+    }
+
+    fun setPlayFence(on: Boolean) {
+        synchronized(lock) {
+            if (_snapshot.value.playFence == on) return
+            prefs.edit().putBoolean(KEY_PLAY, on).apply()
+            _snapshot.value = _snapshot.value.copy(playFence = on)
         }
     }
 
@@ -191,6 +200,7 @@ class QuietStore private constructor(context: Context) {
             fixTime = prefs.getLong(KEY_CUR_TIME, 0L),
             currentSsid = prefs.getString(KEY_CUR_SSID, null)?.takeIf { it.isNotBlank() },
             geofenceInside = prefs.getBoolean(KEY_INSIDE, false),
+            playFence = prefs.getBoolean(KEY_PLAY, false),
             selectedPackages = selected,
             log = parseLog(prefs.getString(KEY_LOG, null)),
         )
@@ -210,6 +220,7 @@ class QuietStore private constructor(context: Context) {
         private const val KEY_CUR_TIME = "cur_time"
         private const val KEY_CUR_SSID = "cur_ssid"
         private const val KEY_INSIDE = "inside"
+        private const val KEY_PLAY = "play_fence"
         private const val KEY_PKGS = "packages"
         private const val KEY_LOG = "log"
 

@@ -37,6 +37,12 @@ object Geofencing {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("mode", mode).apply()
     }
 
+    private fun fallback(app: Context) {
+        setMode(app, "fallback"); setPlayFence(app, false); MonitorController.startFallback(app)
+    }
+
+    private fun setPlayFence(app: Context, on: Boolean) = QuietStore.get(app).setPlayFence(on)
+
     private fun pendingIntent(context: Context): PendingIntent {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         val intent = Intent(context, GeofenceReceiver::class.java).setAction("tw.stan.homequiet.GEOFENCE")
@@ -50,11 +56,18 @@ object Geofencing {
         val lat = snap.homeLat
         val lon = snap.homeLon
         if (lat == null || lon == null || !Permissions.hasFine(app)) {
-            setMode(app, "off"); return
+            setMode(app, "off"); setPlayFence(app, false); MonitorController.stop(app); return
         }
         if (!playAvailable(app)) {
-            setMode(app, "fallback"); return
+            fallback(app); return
         }
+        val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val key = "$lat,$lon,${snap.radiusMeters}"
+        if (mode(app) == "play" && prefs.getString("key", null) == key) {
+            MonitorController.stop(app); return // already registered for this home/radius
+        }
+        // New fence: start from "outside"; INITIAL_TRIGGER_ENTER fires right away if we're inside.
+        QuietStore.get(app).setFenceEvent(false, null, null, System.currentTimeMillis())
         runCatching {
             val client = LocationServices.getGeofencingClient(app)
             val fence = Geofence.Builder()
@@ -70,13 +83,13 @@ object Geofencing {
                 .build()
             client.removeGeofences(listOf(ID)).addOnCompleteListener {
                 client.addGeofences(request, pendingIntent(app))
-                    .addOnSuccessListener { setMode(app, "play") }
+                    .addOnSuccessListener { prefs.edit().putString("key", key).apply(); setMode(app, "play"); setPlayFence(app, true); MonitorController.stop(app) }
                     .addOnFailureListener { e ->
                         Log.w(TAG, "geofence add failed; LocationManager fallback", e)
-                        setMode(app, "fallback")
+                        fallback(app)
                     }
             }
-        }.onFailure { setMode(app, "fallback") }
+        }.onFailure { fallback(app) }
     }
 }
 

@@ -49,6 +49,8 @@ data class QuietSnapshot(
     val fixTime: Long = 0L,
     val currentSsid: String? = null,
     val geofenceInside: Boolean = false,
+    /** Play Services geofence registered: its events are authoritative, no fix TTL. */
+    val playFence: Boolean = false,
     val selectedPackages: Set<String> = emptySet(),
     val log: List<DismissedNote> = emptyList(),
 ) {
@@ -69,7 +71,7 @@ data class QuietSnapshot(
 
     /** True only while the latest fix is fresh and inside the saved radius. */
     val insideFence: Boolean
-        get() = fixFresh() && geofenceInside
+        get() = geofenceInside && (playFence || fixFresh())
 
     val atHome: Boolean
         get() = insideFence || wifiMatch
@@ -79,6 +81,7 @@ data class QuietSnapshot(
             homeLat == null || homeLon == null -> Presence.NoHome
             atHome -> Presence.Home
             currentLat == null || fixTime == 0L -> Presence.NoFix
+            playFence -> Presence.Away
             !fixFresh() -> Presence.Stale
             else -> Presence.Away
         }

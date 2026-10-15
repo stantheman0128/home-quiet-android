@@ -85,7 +85,7 @@ fun StatusPage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(268.dp),
+                .height(220.dp),
             contentAlignment = Alignment.Center,
         ) {
             HomeGlyph(
@@ -99,8 +99,8 @@ fun StatusPage(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 TextLabel(
                     text = number,
-                    size = 64,
-                    lineHeight = 68,
+                    size = 48,
+                    lineHeight = 52,
                     weight = FontWeight.Light,
                     spacing = -1f,
                     align = TextAlign.Center,
@@ -114,8 +114,8 @@ fun StatusPage(
         TextLabel(
             text = presenceLabel(snapshot.presence),
             modifier = Modifier.fillMaxWidth(),
-            size = 32,
-            lineHeight = 38,
+            size = 22,
+            lineHeight = 28,
             align = TextAlign.Center,
         )
         Spacer(Modifier.height(6.dp))
@@ -129,7 +129,7 @@ fun StatusPage(
         if (snapshot.paused) {
             Spacer(Modifier.height(6.dp))
             TextLabel(
-                text = "暫停中，通知不會被清掉",
+                text = "已暫停",
                 modifier = Modifier.fillMaxWidth(),
                 color = Paper,
                 size = 13,
@@ -148,7 +148,7 @@ fun StatusPage(
         }
         if (!permissions.locationEnabled) {
             Spacer(Modifier.height(10.dp))
-            QuietTextButton("定位服務已關閉，點一下開啟", onClick = actions.openLocationServices)
+            QuietTextButton("定位已關閉，點此開啟", onClick = actions.openLocationServices)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -175,7 +175,7 @@ fun StatusPage(
         )
         Spacer(Modifier.height(10.dp))
         TextLabel(
-            "人在家的判斷靠定位。GPS、Wi-Fi、行動數據都可以，不限定某一種網路。",
+            "GPS、Wi-Fi、行動網路都可定位",
             color = Faint,
             size = 12,
             lineHeight = 18,
@@ -197,7 +197,7 @@ fun StatusPage(
         Spacer(Modifier.height(12.dp))
         ToggleRow(
             title = "連上住家 Wi-Fi 也算在家",
-            subtitle = "除了地理範圍，連上設定住家時的 Wi-Fi 也算在家。",
+            subtitle = "連上設定住家時的 Wi-Fi",
             checked = snapshot.wifiAlsoCounts,
             onCheckedChange = onWifi,
         )

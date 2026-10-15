@@ -40,7 +40,7 @@ object AppCatalog {
                 grokInstalled && !grokSystemLabel.isNullOrBlank() && grokSystemLabel != GROK_LABEL ->
                     "$grokSystemLabel · $GROK_PACKAGE"
                 grokInstalled -> GROK_PACKAGE
-                else -> "尚未安裝，之後裝上會自動套用"
+                else -> "尚未安裝"
             },
             installed = grokInstalled || found.containsKey(GROK_PACKAGE),
             pinned = true,

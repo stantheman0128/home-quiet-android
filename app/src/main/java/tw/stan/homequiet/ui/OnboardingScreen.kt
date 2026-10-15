@@ -80,17 +80,17 @@ fun OnboardingScreen(
 
 @Composable
 private fun WelcomeStep() {
-    TextLabel("到家就安靜", size = 36, lineHeight = 42)
+    TextLabel("到家就安靜", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "進入你設好的住家範圍時，在家安靜會清掉所選應用的通知。人一離開，通知恢復。",
+        "在家時自動清除所選應用的通知，出門就恢復。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     Spacer(Modifier.height(12.dp))
     TextLabel(
-        "定位可以用 GPS，也可以用 Wi-Fi 或行動數據，不需要一直開著 Wi-Fi。預設會安靜 Grok Bot。",
+        "預設：Grok Bot。",
         color = Mute,
         size = 15,
         lineHeight = 24,
@@ -99,13 +99,13 @@ private fun WelcomeStep() {
 
 @Composable
 private fun NotificationStep(actions: PermissionActions) {
-    TextLabel("允許清除通知", size = 36, lineHeight = 42)
+    TextLabel("允許清除通知", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "需要通知存取權，才能在你人在家時清掉勾選的通知。人在外面時，這些通知維持原樣。",
+        "需要通知存取權才能清除通知。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     Spacer(Modifier.height(20.dp))
     RestrictedGuide(onOpenDetails = actions.openAppDetails)
@@ -113,17 +113,17 @@ private fun NotificationStep(actions: PermissionActions) {
 
 @Composable
 private fun PreciseStep() {
-    TextLabel("精確位置", size = 36, lineHeight = 42)
+    TextLabel("精確位置", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "用來算你和住家的距離。請允許「精確」，不要只選「大約」，範圍才不會差上一段路。",
+        "請選「精確」，用來判斷是否在家。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     Spacer(Modifier.height(12.dp))
     TextLabel(
-        "室內通常會改走 Wi-Fi 或行動網路定位，不一定要看得到天空。",
+        "室內也可用 Wi-Fi／行動網路定位。",
         color = Mute,
         size = 15,
         lineHeight = 24,
@@ -132,55 +132,55 @@ private fun PreciseStep() {
 
 @Composable
 private fun BackgroundStep(permissions: PermissionState) {
-    TextLabel("背景也要知道", size = 36, lineHeight = 42)
+    TextLabel("背景也要知道", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "請選「一律允許」。只選「僅在使用應用程式時」的話，離開這個畫面之後就無法判斷你在不在家。",
+        "請選「一律允許」，背景才能判斷。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     if (!permissions.fine) {
         Spacer(Modifier.height(12.dp))
         TextLabel(
-            "要先允許精確位置，系統才會問背景位置。",
+            "請先允許精確位置。",
             color = Mute,
-            size = 15,
-            lineHeight = 24,
+            size = 13,
+            lineHeight = 20,
         )
     }
 }
 
 @Composable
 private fun BatteryStep() {
-    TextLabel("不要被系統睡著", size = 36, lineHeight = 42)
+    TextLabel("不要被系統睡著", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "關閉電池最佳化，定位才不會在背景被停掉。這不會讓它一直耗電，只在判斷你是否在家時更新位置。",
+        "關閉電池最佳化，避免背景判斷被停掉。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     if (Build.VERSION.SDK_INT >= 33) {
         Spacer(Modifier.height(12.dp))
         TextLabel(
-            "Android 13 以上還需要允許通知，才能掛一則不發聲的運作狀態，讓系統不要把定位停掉。",
+            "不會常駐通知。",
             color = Mute,
-            size = 15,
-            lineHeight = 24,
+            size = 13,
+            lineHeight = 20,
         )
     }
 }
 
 @Composable
 private fun ReadyStep(permissions: PermissionState, actions: PermissionActions) {
-    TextLabel("可以開始了", size = 36, lineHeight = 42)
+    TextLabel("可以開始了", size = 26, lineHeight = 32)
     Spacer(Modifier.height(16.dp))
     TextLabel(
-        "進到住家範圍，Grok Bot 和你另外勾的通知會被清掉。走出去就恢復。沒開齊也能先進去，首頁會留著入口。",
+        "到家自動安靜，出門恢復。",
         color = Paper,
-        size = 16,
-        lineHeight = 26,
+        size = 14,
+        lineHeight = 22,
     )
     Spacer(Modifier.height(8.dp))
     PermissionLine(
