@@ -37,6 +37,24 @@ object Geofencing {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("mode", mode).apply()
     }
 
+    /** One-shot location: Fused getCurrentLocation, else LocationManager last known. */
+    @SuppressLint("MissingPermission")
+    fun seed(app: Context) {
+        val store = QuietStore.get(app)
+        val lastKnown = { tw.stan.homequiet.data.LocationHelper.lastKnown(app)?.let { store.setFix(it.latitude, it.longitude, it.time, "定位") } }
+        if (!Permissions.hasFine(app)) return
+        if (!playAvailable(app)) { lastKnown(); return }
+        runCatching {
+            val cts = com.google.android.gms.tasks.CancellationTokenSource()
+            LocationServices.getFusedLocationProviderClient(app)
+                .getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
+                .addOnSuccessListener { loc ->
+                    if (loc != null) store.setFix(loc.latitude, loc.longitude, System.currentTimeMillis(), "即時定位") else lastKnown()
+                }
+                .addOnFailureListener { lastKnown() }
+        }.onFailure { lastKnown() }
+    }
+
     private fun fallback(app: Context) {
         setMode(app, "fallback"); setPlayFence(app, false); MonitorController.startFallback(app)
     }
@@ -50,7 +68,7 @@ object Geofencing {
     }
 
     @SuppressLint("MissingPermission")
-    fun register(context: Context) {
+    fun register(context: Context, force: Boolean = false) {
         val app = context.applicationContext
         val snap = QuietStore.get(app).snapshot.value
         val lat = snap.homeLat
@@ -63,11 +81,12 @@ object Geofencing {
         }
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val key = "$lat,$lon,${snap.radiusMeters}"
-        if (mode(app) == "play" && prefs.getString("key", null) == key) {
+        // Always seed home/away from a one-shot current location, so we never wait on an ENTER
+        // that won't come when the user is already inside.
+        seed(app)
+        if (!force && mode(app) == "play" && prefs.getString("key", null) == key) {
             MonitorController.stop(app); return // already registered for this home/radius
         }
-        // New fence: start from "outside"; INITIAL_TRIGGER_ENTER fires right away if we're inside.
-        QuietStore.get(app).setFenceEvent(false, null, null, System.currentTimeMillis())
         runCatching {
             val client = LocationServices.getGeofencingClient(app)
             val fence = Geofence.Builder()

@@ -52,6 +52,10 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         refreshSignals()
         refreshApps()
         MonitorController.start(app)
+        if (_permissions.value.listener) runCatching {
+            android.service.notification.NotificationListenerService.requestRebind(
+                android.content.ComponentName(app, tw.stan.homequiet.service.QuietNotificationListener::class.java))
+        }
     }
 
     fun refreshApps() {

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -95,6 +96,15 @@ fun LogPage(
 
 @Composable
 private fun LogRow(note: DismissedNote, whenLabel: String) {
+    if (note.packageName == tw.stan.homequiet.data.QuietStore.STATE_PKG) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextLabel(note.appLabel, size = 13, color = Paper)
+            Spacer(Modifier.width(8.dp))
+            TextLabel(note.title, size = 12, color = Faint, modifier = Modifier.weight(1f))
+            TextLabel(whenLabel, color = Faint, size = 12)
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
