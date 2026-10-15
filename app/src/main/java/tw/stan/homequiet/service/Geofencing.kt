@@ -55,6 +55,10 @@ object Geofencing {
         }.onFailure { lastKnown() }
     }
 
+    fun invalidate(context: Context) {
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove("key").apply()
+    }
+
     private fun fallback(app: Context) {
         setMode(app, "fallback"); setPlayFence(app, false); MonitorController.startFallback(app)
     }
@@ -115,13 +119,22 @@ object Geofencing {
 class GeofenceReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val event = GeofencingEvent.fromIntent(intent) ?: return
-        if (event.hasError()) return
+        if (event.hasError()) {
+            // e.g. GEOFENCE_NOT_AVAILABLE after location was switched off: Play drops all fences.
+            // Forget the registration so it is re-added (or falls back) instead of silently staying dead.
+            QuietStore.get(context).note("地理圍欄錯誤", "code ${event.errorCode} · 重新註冊")
+            Geofencing.invalidate(context)
+            Geofencing.register(context, force = true)
+            return
+        }
         val inside = when (event.geofenceTransition) {
             Geofence.GEOFENCE_TRANSITION_ENTER -> true
             Geofence.GEOFENCE_TRANSITION_EXIT -> false
             else -> return
         }
         val loc = event.triggeringLocation
-        QuietStore.get(context).setFenceEvent(inside, loc?.latitude, loc?.longitude, System.currentTimeMillis())
+        val accepted = QuietStore.get(context).setFenceEvent(inside, loc?.latitude, loc?.longitude, System.currentTimeMillis())
+        // An ignored (jittery) EXIT must not leave us "home" forever: re-check with a fresh fix.
+        if (!accepted) Geofencing.seed(context.applicationContext)
     }
 }

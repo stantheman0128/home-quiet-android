@@ -188,6 +188,6 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         LocationHelper.lastKnown(app)?.let { fix ->
             store.setFix(fix.latitude, fix.longitude, fix.time, "定位", fix.accuracy)
         }
-        WifiHelper.currentSsid(app)?.let(store::setSsid)
+        store.setSsid(WifiHelper.currentSsid(app))
     }
 }

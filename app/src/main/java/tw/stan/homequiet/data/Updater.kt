@@ -31,9 +31,9 @@ object Updater {
 
     suspend fun check(context: Context, force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!force && now - lastCheck < 30 * 60_000L) return
+        if (!force && now - lastCheck < 5 * 60_000L) return
+        if (_checking.value) return
         _checking.value = true
-        lastCheck = now
         val found = withContext(Dispatchers.IO) {
             runCatching {
                 val c = URL(API).openConnection() as HttpURLConnection
@@ -51,6 +51,7 @@ object Updater {
             }
         }
         _checking.value = false
+        if (found.isSuccess) lastCheck = now // failures retry on next resume
         _state.value = found.getOrNull()
         _result.value = when {
             found.isFailure -> "error"

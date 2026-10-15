@@ -66,7 +66,7 @@ class MonitorService : Service() {
         override fun onLocationChanged(location: android.location.Location) {
             val store = QuietStore.get(this@MonitorService)
             store.setFix(location.latitude, location.longitude, location.time, "備援定位", location.accuracy)
-            WifiHelper.currentSsid(this@MonitorService)?.let(store::setSsid)
+            store.setSsid(WifiHelper.currentSsid(this@MonitorService))
         }
 
         @Deprecated("Deprecated in Java")
@@ -79,9 +79,7 @@ class MonitorService : Service() {
 
     private val ssidTick = object : Runnable {
         override fun run() {
-            WifiHelper.currentSsid(this@MonitorService)?.let { ssid ->
-                QuietStore.get(this@MonitorService).setSsid(ssid)
-            }
+            QuietStore.get(this@MonitorService).setSsid(WifiHelper.currentSsid(this@MonitorService))
             handler.postDelayed(this, SSID_INTERVAL_MS)
         }
     }
@@ -197,7 +195,7 @@ class MonitorService : Service() {
         LocationHelper.lastKnown(this)?.let { fix ->
             QuietStore.get(this).setFix(fix.latitude, fix.longitude, fix.time, "備援定位", fix.accuracy)
         }
-        WifiHelper.currentSsid(this)?.let { QuietStore.get(this).setSsid(it) }
+        QuietStore.get(this).setSsid(WifiHelper.currentSsid(this))
         handler.post(ssidTick)
     }
 

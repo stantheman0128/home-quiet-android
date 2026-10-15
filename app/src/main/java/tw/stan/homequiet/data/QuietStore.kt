@@ -132,7 +132,7 @@ class QuietStore private constructor(context: Context) {
     }
 
     /** Play Services geofence transition: authoritative inside/outside, counts as a fresh fix. */
-    fun setFenceEvent(inside: Boolean, lat: Double?, lon: Double?, time: Long) {
+    fun setFenceEvent(inside: Boolean, lat: Double?, lon: Double?, time: Long): Boolean {
         synchronized(lock) {
             val cur = _snapshot.value
             if (!inside && cur.homeLat != null && lat != null && lon != null) {
@@ -143,7 +143,7 @@ class QuietStore private constructor(context: Context) {
                     val next = (listOf(n) + cur.log).take(QuietSnapshot.LOG_LIMIT)
                     prefs.edit().putString(KEY_LOG, encodeLog(next)).apply()
                     _snapshot.value = cur.copy(log = next)
-                    return
+                    return false
                 }
             }
             logState(cur, inside, "地理圍欄", null)
@@ -156,6 +156,7 @@ class QuietStore private constructor(context: Context) {
                 currentLat = lat ?: cur.currentLat,
                 currentLon = lon ?: cur.currentLon,
             )
+            return true
         }
     }
 

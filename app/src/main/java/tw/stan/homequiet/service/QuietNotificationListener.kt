@@ -135,7 +135,7 @@ class QuietNotificationListener : NotificationListenerService() {
         LocationHelper.lastKnown(this)?.let { fix ->
             store.setFix(fix.latitude, fix.longitude, fix.time, "通知時定位", fix.accuracy)
         }
-        WifiHelper.currentSsid(this)?.let(store::setSsid)
+        store.setSsid(WifiHelper.currentSsid(this))
     }
 
     private fun tooSoon(key: String): Boolean {
