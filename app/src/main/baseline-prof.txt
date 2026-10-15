@@ -1,0 +1,17 @@
+# Hand-written baseline profile: app startup + Apps list scrolling.
+# (Compose / AndroidX libraries also contribute their own bundled profiles.)
+HSPLtw/stan/homequiet/HomeQuietApp;->**(**)**
+HSPLtw/stan/homequiet/MainActivity;->**(**)**
+HSPLtw/stan/homequiet/data/QuietStore;->**(**)**
+HSPLtw/stan/homequiet/data/QuietStore$Companion;->**(**)**
+HSPLtw/stan/homequiet/data/QuietSnapshot;->**(**)**
+HSPLtw/stan/homequiet/data/Permissions;->**(**)**
+HSPLtw/stan/homequiet/data/AppCatalog;->**(**)**
+HSPLtw/stan/homequiet/data/AppInfo;->**(**)**
+HSPLtw/stan/homequiet/data/Geo;->**(**)**
+HSPLtw/stan/homequiet/data/LocationHelper;->**(**)**
+HSPLtw/stan/homequiet/data/WifiHelper;->**(**)**
+HSPLtw/stan/homequiet/ui/**;->**(**)**
+HSPLtw/stan/homequiet/service/MonitorController;->**(**)**
+HSPLtw/stan/homequiet/service/Geofencing;->**(**)**
+Ltw/stan/homequiet/**;

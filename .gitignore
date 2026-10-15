@@ -1,5 +1,5 @@
-local.properties
-.gradle/
 build/
-app/build/
-release.jks
+.gradle/
+local.properties
+*.apk
+.idea/

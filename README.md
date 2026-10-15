@@ -1,26 +1,9 @@
-# 在家安靜 HomeQuiet（Android POC）
+# 在家安靜 HomeQuiet
 
-人在家（依**定位**判斷，不管連 Wi-Fi 或用行動網路）時，自動收起指定 App（預設 Grok Bot）的通知；出門就照常跳。
+到家時自動清除選定 App 的通知（預設 Grok Bot）。v0.3.0 起介面改為 Jetpack Compose 黑底極簡設計（狀態／應用／紀錄三分頁＋設定引導）。
 
-## 安裝
-手機瀏覽器打開 [最新版 Release](https://github.com/stantheman0128/home-quiet-android/releases/latest)，下載 APK 並安裝（需允許「安裝不明來源的應用程式」）。已裝 v0.1.0 可直接覆蓋安裝。
+- 套件名：`tw.stan.homequiet`，release 以 `release.jks` 簽章（與 v0.1/v0.2 同一把金鑰，可直接覆蓋安裝）
+- 在家判斷：Google Play 服務地理圍欄；同時以前景服務透過 LocationManager（GPS／網路／被動）持續定位作為備援；可選「住家 Wi-Fi 也算在家」
+- 通知清除：NotificationListenerService
 
-## 設定
-1. 「開啟通知存取」→ 打開「在家安靜」。（若顯示受限設定：設定 → 應用程式 → 在家安靜 → ⋮ →「允許受限設定」。）
-2. 「允許位置」→「使用應用程式時允許」＋精確位置。
-3. 「位置改成一律允許」→ 權限 → 位置 →「一律允許」（背景偵測到家/離家必須）。
-4. 在家時按「把目前位置設為家」，用滑桿調範圍半徑（50–500 公尺，預設 150）。
-5. 確認「要靜音的 App」有 Grok Bot。
-6. 選用：開啟「連上家裡 Wi-Fi 也算在家」並設定家的 Wi-Fi。
-手機定位總開關需開著；建議把本 App 的電池設為「不限制」。
-
-## 運作方式
-有 Google Play 服務時用地理圍欄（省電）；沒有則改用系統定位更新。另外被動接收其他 App 的定位結果來更新距離。開機與更新後會自動重新註冊。
-
-## 已知限制
-- 到家／離家判斷可能延遲 1～幾分鐘；室內定位誤差可達數十～上百公尺，半徑太小容易誤判。
-- 通知可能先閃一下橫幅再被收起；被收起的通知只在 App 內紀錄看得到標題。
-- 自簽名 APK，僅供側載。
-
-## 建置
-JDK 17 + Android SDK 35，`./gradlew assembleRelease`（需自備 `release.jks`）。
+Build: `./gradlew assembleRelease` → `app/build/outputs/apk/release/app-release.apk`
