@@ -180,6 +180,7 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                         onWifi = vm::setWifiAlso,
                         onAddSsid = vm::addCurrentSsid,
                         onRemoveSsid = vm::removeSsid,
+                        onOpenSettings = { tabIndex = MainTab.Settings.ordinal },
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Apps -> AppsPage(
@@ -197,6 +198,16 @@ fun QuietRoot(vm: QuietViewModel = viewModel()) {
                         updateError = vm.updateError.collectAsState().value,
                         onCheckUpdate = vm::checkUpdateNow,
                         onInstallUpdate = { vm.onUpdateClicked(context) },
+                        places = {
+                            PlacesSection(
+                                snapshot = snapshot, fixing = fixing,
+                                onSetHome = vm::setHomeFromCurrent, onRadius = vm::setRadius, onWifi = vm::setWifiAlso,
+                                onAddSsid = vm::addCurrentSsid, onRemoveSsid = vm::removeSsid,
+                                onAddPlace = { vm.addPlaceHere(it) }, onPlaceEnabled = vm::setPlaceEnabled,
+                                onPlaceRadius = vm::setPlaceRadius, onPlaceRemove = vm::removePlace,
+                                onPlaceBindSsid = vm::bindCurrentSsidToPlace, onPlaceUnbindSsid = vm::unbindSsid,
+                            )
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                     MainTab.Log -> LogPage(

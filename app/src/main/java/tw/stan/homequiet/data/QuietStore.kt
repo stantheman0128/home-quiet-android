@@ -111,8 +111,75 @@ class QuietStore private constructor(context: Context) {
         }
     }
 
+    // ---------- extra places ----------
+    private fun savePlaces(list: List<Place>) {
+        prefs.edit().putString(KEY_PLACES, Place.encode(list)).commit()
+        _snapshot.value = _snapshot.value.copy(places = list)
+    }
+
+    fun addPlace(name: String, lat: Double, lon: Double, radius: Int, ssid: String?): Place {
+        synchronized(lock) {
+            val p = Place(
+                id = System.currentTimeMillis().toString(36), name = name.trim().ifBlank { "地點" },
+                lat = lat, lon = lon, radius = radius.coerceIn(QuietSnapshot.MIN_RADIUS, QuietSnapshot.MAX_RADIUS),
+                ssids = setOfNotNull(ssid), fixInside = true,
+            )
+            savePlaces(_snapshot.value.places + p)
+            note("新增地點", "${p.name} · ${p.radius} m")
+            return p
+        }
+    }
+
+    fun updatePlace(id: String, f: (Place) -> Place) {
+        synchronized(lock) { savePlaces(_snapshot.value.places.map { if (it.id == id) f(it) else it }) }
+    }
+
+    fun removePlace(id: String) {
+        synchronized(lock) { savePlaces(_snapshot.value.places.filterNot { it.id == id }) }
+    }
+
+    /** Play geofence transition for an extra place. */
+    fun setPlaceFence(id: String, inside: Boolean, lat: Double?, lon: Double?) {
+        synchronized(lock) {
+            val p = _snapshot.value.places.firstOrNull { it.id == id } ?: return
+            if (!inside && lat != null && lon != null && p.distanceTo(lat, lon) <= p.radius + QuietSnapshot.EXIT_MARGIN_M) {
+                note("忽略離開", "${p.name} · 地理圍欄 · ${p.distanceTo(lat, lon).toInt()} m"); return
+            }
+            if (p.fenceInside != inside) note(if (inside) "到達" else "離開", "${p.name} · 地理圍欄")
+            savePlaces(_snapshot.value.places.map { if (it.id == id) it.copy(fenceInside = inside, fixInside = inside) else it })
+        }
+    }
+
+    /** Location decision for each extra place (same hysteresis as home, no streak). Caller holds lock. */
+    private fun applyFixToPlaces(lat: Double, lon: Double, accuracy: Float, source: String) {
+        val list = _snapshot.value.places
+        if (list.isEmpty()) return
+        var changed = false
+        val next = list.map { p ->
+            val d = p.distanceTo(lat, lon)
+            val dec = HomeSignals.locationInside(p.fixInside, d, accuracy, p.radius) ?: return@map p
+            val far = HomeSignals.hardExit(d, accuracy)
+            val fence = if (far && !dec) false else p.fenceInside
+            if (dec != p.fixInside || fence != p.fenceInside) {
+                changed = true
+                if ((dec || fence) != (p.fixInside || p.fenceInside)) {
+                    note(if (dec || fence) "到達" else "離開", "${p.name} · $source · ${d.toInt()} m")
+                }
+                p.copy(fixInside = dec, fenceInside = fence)
+            } else p
+        }
+        if (changed) savePlaces(next)
+    }
+
     fun setFix(lat: Double, lon: Double, time: Long, source: String = "定位", accuracy: Float = 0f) {
         synchronized(lock) {
+            applyFixToPlaces(lat, lon, accuracy, source)
+            if (_snapshot.value.homeLat == null) {
+                // No home: still keep the current point for the radar / places.
+                prefs.edit().putString(KEY_CUR_LAT, lat.toPref()).putString(KEY_CUR_LON, lon.toPref()).putLong(KEY_CUR_TIME, time).apply()
+                _snapshot.value = _snapshot.value.copy(currentLat = lat, currentLon = lon, fixTime = time)
+                return
+            }
             val cur = _snapshot.value
             val homeLat = cur.homeLat ?: return
             val homeLon = cur.homeLon ?: return
@@ -151,7 +218,7 @@ class QuietStore private constructor(context: Context) {
                 geofenceInside = decision,
                 fenceInside = fence,
             )
-            logState(cur, next.atHome, source + (if (accuracy > 0f) " ±${accuracy.toInt()}" else ""), distance)
+            logState(cur, next.atHomeOnly, source + (if (accuracy > 0f) " ±${accuracy.toInt()}" else ""), distance)
             val edit = prefs.edit()
                 .putString(KEY_CUR_LAT, lat.toPref())
                 .putString(KEY_CUR_LON, lon.toPref())
@@ -196,7 +263,7 @@ class QuietStore private constructor(context: Context) {
                 currentLat = lat ?: cur.currentLat,
                 currentLon = lon ?: cur.currentLon,
             )
-            logState(cur, prospective.atHome, "地理圍欄", null)
+            logState(cur, prospective.atHomeOnly, "地理圍欄", null)
             val e = prefs.edit()
                 .putBoolean(KEY_INSIDE, inside)
                 .putBoolean(KEY_FENCE, inside)
@@ -227,7 +294,7 @@ class QuietStore private constructor(context: Context) {
             id = System.nanoTime(),
             packageName = STATE_PKG,
             appLabel = if (atHome) "到家" else "離家",
-            title = source + (meters?.let { " · ${it.toInt()} m" } ?: ""),
+            title = "住家 · " + source + (meters?.let { " · ${it.toInt()} m" } ?: ""),
             text = "",
             timestamp = System.currentTimeMillis(),
             reason = "",
@@ -261,11 +328,19 @@ class QuietStore private constructor(context: Context) {
             prefs.edit().putString(KEY_CUR_SSID, ssid).commit()
             val next = cur.copy(currentSsid = ssid)
             _snapshot.value = next
+            next.places.forEach { p ->
+                if (p.enabled && p.ssidMatch(cur.currentSsid) != p.ssidMatch(ssid)) {
+                    val n = DismissedNote(System.nanoTime(), STATE_PKG, if (p.ssidMatch(ssid)) "${p.name} Wi-Fi" else "離開 Wi-Fi", "${p.name} · ${ssid ?: cur.currentSsid ?: ""}", "", System.currentTimeMillis(), "")
+                    val log = (listOf(n) + _snapshot.value.log).take(QuietSnapshot.LOG_LIMIT)
+                    prefs.edit().putString(KEY_LOG, encodeLog(log)).apply()
+                    _snapshot.value = _snapshot.value.copy(log = log)
+                }
+            }
             if (cur.wifiAlsoCounts && cur.wifiMatch != next.wifiMatch) {
-                val n = DismissedNote(System.nanoTime(), STATE_PKG, if (next.wifiMatch) "住家 Wi-Fi" else "離開 Wi-Fi", ssid ?: "", "", System.currentTimeMillis(), "")
-                val log = (listOf(n) + next.log).take(QuietSnapshot.LOG_LIMIT)
+                val n = DismissedNote(System.nanoTime(), STATE_PKG, if (next.wifiMatch) "住家 Wi-Fi" else "離開 Wi-Fi", "住家 · " + (ssid ?: ""), "", System.currentTimeMillis(), "")
+                val log = (listOf(n) + _snapshot.value.log).take(QuietSnapshot.LOG_LIMIT)
                 prefs.edit().putString(KEY_LOG, encodeLog(log)).apply()
-                _snapshot.value = next.copy(log = log)
+                _snapshot.value = _snapshot.value.copy(log = log)
             }
         }
     }
@@ -341,6 +416,7 @@ class QuietStore private constructor(context: Context) {
             fenceInside = if (prefs.contains(KEY_FENCE)) prefs.getBoolean(KEY_FENCE, false) else locationInside,
             playFence = prefs.getBoolean(KEY_PLAY, false),
             selectedPackages = selected,
+            places = Place.decode(prefs.getString(KEY_PLACES, null)),
             log = parseLog(prefs.getString(KEY_LOG, null)),
         )
     }
@@ -363,6 +439,7 @@ class QuietStore private constructor(context: Context) {
         private const val KEY_PLAY = "play_fence"
         private const val KEY_SSIDS = "home_ssids"
         private const val KEY_LOGGED = "logged_inside"
+        private const val KEY_PLACES = "places"
         const val STATE_PKG = "tw.stan.homequiet.state"
         private const val KEY_PKGS = "packages"
         private const val KEY_LOG = "log"

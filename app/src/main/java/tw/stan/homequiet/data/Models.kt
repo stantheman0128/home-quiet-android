@@ -59,6 +59,8 @@ data class QuietSnapshot(
     /** Play Services geofence registered: its events are authoritative, no fix TTL. */
     val playFence: Boolean = false,
     val selectedPackages: Set<String> = emptySet(),
+    /** Extra quiet places (work, custom). Home stays in the fields above. */
+    val places: List<Place> = emptyList(),
     val log: List<DismissedNote> = emptyList(),
 ) {
     fun distanceMeters(): Double? {
@@ -94,13 +96,25 @@ data class QuietSnapshot(
             return fence || fix
         }
 
-    val atHome: Boolean
+    /** Home only (original v0.3.7 logic, unchanged). */
+    val atHomeOnly: Boolean
         get() = insideFence || wifiMatch
+
+    fun placeInside(p: Place): Boolean =
+        p.enabled && (p.fenceInside || (p.fixInside && fixFresh()) || p.ssidMatch(currentSsid))
+
+    /** Name of the place that makes us quiet right now, or null. Home wins. */
+    val activePlace: String?
+        get() = if (atHomeOnly) HOME_NAME else places.firstOrNull { placeInside(it) }?.name
+
+    /** Quiet when inside ANY enabled place (home or extra). Kept as `atHome` so callers stay unchanged. */
+    val atHome: Boolean
+        get() = activePlace != null
 
     val presence: Presence
         get() = when {
-            homeLat == null || homeLon == null -> Presence.NoHome
             atHome -> Presence.Home
+            (homeLat == null || homeLon == null) && places.none { it.enabled } -> Presence.NoHome
             currentLat == null || fixTime == 0L -> Presence.NoFix
             playFence -> Presence.Away
             !fixFresh() -> Presence.Stale
@@ -109,6 +123,9 @@ data class QuietSnapshot(
 
     fun homeReason(): String? = when {
         !atHome -> null
+        !atHomeOnly -> places.firstOrNull { placeInside(it) }?.let { p ->
+            if (p.ssidMatch(currentSsid) && !p.fenceInside && !p.fixInside) "${p.name} · Wi-Fi" else "在${p.name}範圍內"
+        }
         insideFence && wifiMatch -> "在範圍內，也連上住家 Wi-Fi"
         wifiMatch -> "連上住家 Wi-Fi"
         insideFence -> "在住家範圍內"
@@ -124,6 +141,7 @@ data class QuietSnapshot(
         const val EXIT_HYSTERESIS_M = 20.0
         const val EXIT_MARGIN_M = 60.0
         const val LOG_LIMIT = 100
+        const val HOME_NAME = "住家"
 
         fun canonicalSsid(value: String): String {
             var v = value.trim()

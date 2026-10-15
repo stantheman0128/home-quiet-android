@@ -77,14 +77,15 @@ object Geofencing {
         val snap = QuietStore.get(app).snapshot.value
         val lat = snap.homeLat
         val lon = snap.homeLon
-        if (lat == null || lon == null || !Permissions.hasFine(app)) {
+        val extra = snap.places.filter { it.enabled }
+        if ((lat == null || lon == null) && extra.isEmpty() || !Permissions.hasFine(app)) {
             setMode(app, "off"); setPlayFence(app, false); MonitorController.stop(app); return
         }
         if (!playAvailable(app)) {
             fallback(app); return
         }
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val key = "$lat,$lon,${snap.radiusMeters}"
+        val key = "$lat,$lon,${snap.radiusMeters}|" + extra.joinToString(";") { "${it.id},${it.lat},${it.lon},${it.radius}" }
         // Always seed home/away from a one-shot current location, so we never wait on an ENTER
         // that won't come when the user is already inside.
         seed(app)
@@ -93,18 +94,23 @@ object Geofencing {
         }
         runCatching {
             val client = LocationServices.getGeofencingClient(app)
-            val fence = Geofence.Builder()
-                .setRequestId(ID)
-                .setCircularRegion(lat, lon, snap.radiusMeters.toFloat())
+            fun fence(id: String, la: Double, lo: Double, r: Int) = Geofence.Builder()
+                .setRequestId(id)
+                .setCircularRegion(la, lo, r.toFloat())
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setNotificationResponsiveness(60_000)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build()
+            val fences = buildList {
+                if (lat != null && lon != null) add(fence(ID, lat, lon, snap.radiusMeters))
+                extra.take(90).forEach { add(fence(tw.stan.homequiet.data.Place.GEOFENCE_PREFIX + it.id, it.lat, it.lon, it.radius)) }
+            }
             val request = GeofencingRequest.Builder()
                 .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                .addGeofence(fence)
+                .addGeofences(fences)
                 .build()
-            client.removeGeofences(listOf(ID)).addOnCompleteListener {
+            // Removing by PendingIntent clears home + every old place fence in one call.
+            client.removeGeofences(pendingIntent(app)).addOnCompleteListener {
                 client.addGeofences(request, pendingIntent(app))
                     .addOnSuccessListener { prefs.edit().putString("key", key).apply(); setMode(app, "play"); setPlayFence(app, true); MonitorController.stop(app) }
                     .addOnFailureListener { e ->
@@ -133,8 +139,16 @@ class GeofenceReceiver : BroadcastReceiver() {
             else -> return
         }
         val loc = event.triggeringLocation
-        val accepted = QuietStore.get(context).setFenceEvent(inside, loc?.latitude, loc?.longitude, System.currentTimeMillis())
-        // An ignored (jittery) EXIT must not leave us "home" forever: re-check with a fresh fix.
-        if (!accepted) Geofencing.seed(context.applicationContext)
+        val store = QuietStore.get(context)
+        val ids = event.triggeringGeofences?.map { it.requestId } ?: listOf("home")
+        for (id in ids) {
+            if (id.startsWith(tw.stan.homequiet.data.Place.GEOFENCE_PREFIX)) {
+                store.setPlaceFence(id.removePrefix(tw.stan.homequiet.data.Place.GEOFENCE_PREFIX), inside, loc?.latitude, loc?.longitude)
+                continue
+            }
+            val accepted = store.setFenceEvent(inside, loc?.latitude, loc?.longitude, System.currentTimeMillis())
+            // An ignored (jittery) EXIT must not leave us "home" forever: re-check with a fresh fix.
+            if (!accepted) Geofencing.seed(context.applicationContext)
+        }
     }
 }

@@ -142,7 +142,9 @@ class QuietNotificationListener : NotificationListenerService() {
         val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = (extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)
             ?: extras?.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()
-        val reason = when {
+        val reason = if (!snap.atHomeOnly && snap.atHome) {
+            (snap.homeReason() ?: (snap.activePlace ?: "地點")) + if (snoozed) " · 已暫停" else ""
+        } else "住家 · " + when {
             snap.insideFence && snap.wifiMatch -> "在家範圍內 · 住家 Wi-Fi"
             snap.wifiMatch && !snap.insideFence -> "住家 Wi-Fi"
             snoozed -> "在家範圍內 · 已暫停"

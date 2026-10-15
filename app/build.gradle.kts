@@ -12,8 +12,8 @@ android {
         applicationId = "tw.stan.homequiet"
         minSdk = 29
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.3.7"
+        versionCode = 11
+        versionName = "0.3.8"
     }
 
     signingConfigs {
@@ -64,4 +64,5 @@ dependencies {
     implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

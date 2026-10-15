@@ -234,6 +234,47 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // ---------- places ----------
+    fun addPlaceHere(name: String, radius: Int = tw.stan.homequiet.data.QuietSnapshot.DEFAULT_RADIUS) {
+        if (_fixing.value) return
+        viewModelScope.launch {
+            _fixing.value = true
+            try {
+                val app = getApplication<Application>()
+                if (!Permissions.read(app).fine) { _message.value = "需要精確位置"; return@launch }
+                val fix = LocationHelper.fetchFresh(app)
+                if (fix == null) { _message.value = "還沒取得定位，請再試一次"; return@launch }
+                val p = store.addPlace(name, fix.latitude, fix.longitude, radius, null)
+                tw.stan.homequiet.service.Geofencing.register(app)
+                _message.value = "已新增「${p.name}」"
+            } finally {
+                _fixing.value = false
+            }
+        }
+    }
+
+    fun setPlaceEnabled(id: String, on: Boolean) { store.updatePlace(id) { it.copy(enabled = on) }; reFence() }
+    fun setPlaceRadius(id: String, r: Int) {
+        store.updatePlace(id) { it.copy(radius = r.coerceIn(tw.stan.homequiet.data.QuietSnapshot.MIN_RADIUS, tw.stan.homequiet.data.QuietSnapshot.MAX_RADIUS)) }
+        reFence()
+    }
+    fun renamePlace(id: String, name: String) = store.updatePlace(id) { it.copy(name = name.trim().ifBlank { it.name }) }
+    fun removePlace(id: String) { store.removePlace(id); reFence() }
+    fun bindCurrentSsidToPlace(id: String) {
+        val ssid = WifiHelper.currentSsid(getApplication()) ?: store.snapshot.value.currentSsid
+        if (ssid == null) { _message.value = "未連上 Wi-Fi"; return }
+        store.updatePlace(id) { it.copy(ssids = it.ssids + ssid) }
+    }
+    fun unbindSsid(id: String, ssid: String) = store.updatePlace(id) { it.copy(ssids = it.ssids - ssid) }
+
+    private fun reFence() {
+        fenceJob?.cancel()
+        fenceJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(800)
+            tw.stan.homequiet.service.Geofencing.register(getApplication())
+        }
+    }
+
     private fun refreshSignals() {
         val app = getApplication<Application>()
         LocationHelper.lastKnown(app)?.let { fix ->
