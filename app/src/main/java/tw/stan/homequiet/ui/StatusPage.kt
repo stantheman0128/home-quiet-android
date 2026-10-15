@@ -84,16 +84,22 @@ fun StatusPage(
         Spacer(Modifier.height(10.dp))
         // Wordmark: current place name, or the app name.
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextLabel(active ?: "在家安靜", size = 15, weight = FontWeight.Bold, spacing = 0.4f)
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(tw.stan.homequiet.R.drawable.ic_mark),
+                contentDescription = null,
+                modifier = Modifier.width(26.dp).height(26.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            TextLabel("在家安靜", size = 15, weight = FontWeight.Bold, spacing = 0.4f)
             Spacer(Modifier.weight(1f))
-            TextLabel(presenceLabel(snapshot.presence).let { if (active != null) "在場" else it }, color = if (active != null) Acid else Mute, size = 12)
+            TextLabel(active ?: presenceLabel(snapshot.presence), color = if (active != null) Acid else Mute, size = 12)
         }
         Spacer(Modifier.height(8.dp))
-        Radar(
+        Constellation(
             inside = active != null,
             quiet = active != null && on,
             target = target,
-            modifier = Modifier.fillMaxWidth().height(260.dp),
+            modifier = Modifier.fillMaxWidth().height(250.dp),
         )
         TextLabel(
             text = when {
@@ -163,24 +169,24 @@ fun HeroToggle(on: Boolean, active: Boolean, onToggle: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
-                .width(220.dp)
-                .height(84.dp)
-                .clip(CutCornerShape(topStart = 18.dp, bottomEnd = 18.dp))
+                .width(150.dp)
+                .height(54.dp)
+                .clip(CutCornerShape(topStart = 12.dp, bottomEnd = 12.dp))
                 .background(if (on) Acid else androidx.compose.ui.graphics.Color(0xFF1C1C1C))
                 .clickable(onClick = onToggle)
-                .padding(8.dp),
+                .padding(6.dp),
         ) {
-            val travel = 220.dp - 16.dp - 96.dp
+            val travel = 150.dp - 12.dp - 66.dp
             Box(
                 Modifier
                     .padding(start = travel * knob)
-                    .width(96.dp)
+                    .width(66.dp)
                     .fillMaxHeight()
-                    .clip(CutCornerShape(topStart = 12.dp, bottomEnd = 12.dp))
+                    .clip(CutCornerShape(topStart = 8.dp, bottomEnd = 8.dp))
                     .background(if (on) Ink else androidx.compose.ui.graphics.Color(0xFF3A3A3A)),
                 contentAlignment = Alignment.Center,
             ) {
-                TextLabel(if (on) "ON" else "OFF", color = if (on) Acid else Mute, size = 20, weight = FontWeight.Black)
+                TextLabel(if (on) "ON" else "OFF", color = if (on) Acid else Mute, size = 15, weight = FontWeight.Black)
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -195,66 +201,68 @@ fun HeroToggle(on: Boolean, active: Boolean, onToggle: () -> Unit) {
     }
 }
 
-/** Animated radar: sweep + pulsing rings; inside = solid core, away = bearing arrow toward nearest place (north-up). */
+/**
+ * Constellation ring (evolves the original design): dense outer dots, sparse inner dots, a few
+ * geometric lines. One shared phase drives a gentle float, so a frame is a single cheap Canvas pass.
+ * Away: distance in the centre and a small arrow tick on the outer ring toward the nearest place (north-up).
+ */
 @Composable
-fun Radar(inside: Boolean, quiet: Boolean, target: Target?, modifier: Modifier = Modifier) {
-    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "radar")
-    val sweep by t.animateFloat(0f, 360f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(4200, easing = androidx.compose.animation.core.LinearEasing)), label = "sweep")
-    val pulse by t.animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2600, easing = androidx.compose.animation.core.LinearEasing)), label = "pulse")
-    val accent = if (quiet) Acid else Paper
+fun Constellation(inside: Boolean, quiet: Boolean, target: Target?, modifier: Modifier = Modifier) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "stars")
+    val phase by t.animateFloat(
+        0f, (2 * Math.PI).toFloat(),
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(9000, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "phase",
+    )
+    val lit = if (quiet) Acid else Paper
+    val dim = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.18f)
     Box(modifier, contentAlignment = Alignment.Center) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
             val c = center
-            val r = size.minDimension / 2f - 12.dp.toPx()
-            // concentric rings
-            for (k in 1..4) drawCircle(Line, radius = r * k / 4f, center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
-            // cross hairs
-            drawLine(Line, androidx.compose.ui.geometry.Offset(c.x - r, c.y), androidx.compose.ui.geometry.Offset(c.x + r, c.y), 1.dp.toPx())
-            drawLine(Line, androidx.compose.ui.geometry.Offset(c.x, c.y - r), androidx.compose.ui.geometry.Offset(c.x, c.y + r), 1.dp.toPx())
-            // pulse
-            drawCircle(accent.copy(alpha = (1f - pulse) * 0.5f), radius = r * (0.25f + 0.75f * pulse), center = c, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
-            rotate(sweep, c) {
-            // sweep wedge
-                drawArc(
-                    brush = androidx.compose.ui.graphics.Brush.sweepGradient(
-                        0f to androidx.compose.ui.graphics.Color.Transparent, 0.12f to accent.copy(alpha = 0.28f), 0.121f to androidx.compose.ui.graphics.Color.Transparent, center = c,
-                    ),
-                    startAngle = 0f, sweepAngle = 360f, useCenter = true,
-                    topLeft = androidx.compose.ui.geometry.Offset(c.x - r, c.y - r), size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
-                    alpha = 1f,
+            val outer = size.minDimension * 0.42f
+            val inner = outer * 0.58f
+            val wobble = 2.2.dp.toPx()
+            fun pt(r: Float, a: Double, k: Int): androidx.compose.ui.geometry.Offset {
+                val f = kotlin.math.sin(phase + k * 0.7f) * wobble
+                return androidx.compose.ui.geometry.Offset(
+                    c.x + kotlin.math.cos(a).toFloat() * (r + f),
+                    c.y + kotlin.math.sin(a).toFloat() * (r + f),
                 )
-                drawLine(accent.copy(alpha = 0.7f), c, androidx.compose.ui.geometry.Offset(c.x + r, c.y), 1.5.dp.toPx())
             }
-            // north tick
-            drawLine(Mute, androidx.compose.ui.geometry.Offset(c.x, c.y - r - 8.dp.toPx()), androidx.compose.ui.geometry.Offset(c.x, c.y - r + 6.dp.toPx()), 2.dp.toPx())
-            if (inside) {
-                // solid diamond core
-                val s = 16.dp.toPx()
-                val p = androidx.compose.ui.graphics.Path().apply { moveTo(c.x, c.y - s); lineTo(c.x + s, c.y); lineTo(c.x, c.y + s); lineTo(c.x - s, c.y); close() }
-                drawPath(p, accent)
-            } else if (target?.bearing != null && target.distance != null) {
-                // place marker at a distance-scaled position, arrow from centre toward it
-                val rad = Math.toRadians(target.bearing - 90.0)
-                val frac = (kotlin.math.ln(1.0 + target.distance / target.radius) / kotlin.math.ln(1.0 + 50.0)).coerceIn(0.25, 1.0).toFloat()
-                val px = c.x + (r * frac) * kotlin.math.cos(rad).toFloat(); val py = c.y + (r * frac) * kotlin.math.sin(rad).toFloat()
-                drawLine(accent, c, androidx.compose.ui.geometry.Offset(px, py), 2.dp.toPx())
-                val head = androidx.compose.ui.graphics.Path().apply {
-                    val a = 8.dp.toPx()
-                    moveTo(px + a * kotlin.math.cos(rad).toFloat(), py + a * kotlin.math.sin(rad).toFloat())
-                    lineTo(px + a * kotlin.math.cos(rad + 2.4).toFloat(), py + a * kotlin.math.sin(rad + 2.4).toFloat())
-                    lineTo(px + a * kotlin.math.cos(rad - 2.4).toFloat(), py + a * kotlin.math.sin(rad - 2.4).toFloat())
+            val outerN = 64
+            for (i in 0 until outerN) {
+                val a = i * 2 * Math.PI / outerN - Math.PI / 2
+                val on = inside || i % 4 == 0
+                drawCircle(if (on) lit.copy(alpha = if (inside) 0.85f else 0.6f) else dim, radius = if (on) 1.8.dp.toPx() else 1.2.dp.toPx(), center = pt(outer, a, i))
+            }
+            // inner constellation: 7 points, a few connecting lines (house-like)
+            val innerA = doubleArrayOf(-90.0, -30.0, 25.0, 80.0, 140.0, 200.0, 245.0)
+            val ip = innerA.mapIndexed { k, d -> pt(inner * (if (k % 2 == 0) 1f else 0.78f), Math.toRadians(d), k + 100) }
+            val lines = intArrayOf(0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 0, 0, 3, 1, 5)
+            val lineCol = (if (inside) lit else androidx.compose.ui.graphics.Color.White).copy(alpha = if (inside) 0.45f else 0.14f)
+            var j = 0
+            while (j < lines.size) { drawLine(lineCol, ip[lines[j]], ip[lines[j + 1]], 1.dp.toPx()); j += 2 }
+            ip.forEachIndexed { k, p ->
+                val tw = 0.55f + 0.45f * kotlin.math.sin(phase * 2 + k)
+                drawCircle((if (inside) lit else Paper).copy(alpha = if (inside) tw else 0.35f), radius = 2.4.dp.toPx(), center = p)
+            }
+            if (!inside && target?.bearing != null) {
+                val a = Math.toRadians(target.bearing - 90.0)
+                val tip = androidx.compose.ui.geometry.Offset(c.x + kotlin.math.cos(a).toFloat() * (outer + 12.dp.toPx()), c.y + kotlin.math.sin(a).toFloat() * (outer + 12.dp.toPx()))
+                val s = 6.dp.toPx()
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(tip.x, tip.y)
+                    lineTo(tip.x - s * kotlin.math.cos(a - 0.5).toFloat(), tip.y - s * kotlin.math.sin(a - 0.5).toFloat())
+                    lineTo(tip.x - s * kotlin.math.cos(a + 0.5).toFloat(), tip.y - s * kotlin.math.sin(a + 0.5).toFloat())
                     close()
                 }
-                drawPath(head, accent)
-                drawCircle(Paper, radius = 4.dp.toPx(), center = c)
-            } else {
-                drawCircle(Mute, radius = 4.dp.toPx(), center = c)
+                drawPath(path, Paper)
             }
         }
         if (!inside && target?.distance != null) {
             val (n, u) = splitDistance(target.distance)
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 70.dp)) {
-                TextLabel(n, size = 30, weight = FontWeight.Bold)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                TextLabel(n, size = 28, weight = FontWeight.Bold)
                 TextLabel(u, color = Mute, size = 11)
             }
         }

@@ -60,7 +60,7 @@ class QuietViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val pending = Updater.continuePending(app)
             if (!pending.isNullOrBlank()) _message.value = pending
-            Updater.check(app)
+            // Updates are manual only (Settings → 檢查更新).
         }
     }
 
