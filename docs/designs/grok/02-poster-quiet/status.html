@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, height=844">
+<title>在家安靜 — 狀態 · 海報安靜</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px; height: 844px; margin: 0; overflow: hidden;
+    background: #F4F4F1; color: #0C0C0C;
+    font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { display: flex; flex-direction: row; }
+  a { color: inherit; text-decoration: none; }
+
+  .spine {
+    width: 56px; flex: none; background: #FF2B1A; color: #0C0C0C;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .spine::before {
+    content: ""; position: absolute; top: 18px; left: 21px;
+    width: 14px; height: 14px; background: #0C0C0C;
+  }
+  .spine span {
+    writing-mode: vertical-rl;
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 22px; letter-spacing: 0.38em;
+  }
+
+  .col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .paper {
+    flex: 1; min-height: 0;
+    padding: 18px 16px 0 18px;
+    display: flex; flex-direction: column;
+  }
+  .folio {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+  }
+  .folio .off { color: #8A867E; }
+  h1 {
+    margin-top: 14px;
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 120px; line-height: 1; letter-spacing: -0.06em;
+  }
+  .numrow {
+    margin-top: 18px;
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+  .num {
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 96px; line-height: 0.8; letter-spacing: -0.05em;
+    color: #FF2B1A;
+  }
+  .unit { padding-bottom: 8px; }
+  .unit b { display: block; font-size: 16px; font-weight: 700; }
+  .unit span { display: block; margin-top: 2px; font-size: 12px; color: #5C5852; }
+  .scale { margin-top: auto; margin-bottom: 16px; }
+  .bar { height: 10px; background: #0C0C0C; position: relative; }
+  .bar .fill { width: 35%; height: 100%; background: #FF2B1A; }
+  .bar i {
+    position: absolute; left: 35%; top: 50%;
+    width: 16px; height: 16px; background: #FF2B1A;
+    transform: translate(-50%, -50%);
+  }
+  .scale-l {
+    margin-top: 8px; display: flex; justify-content: space-between;
+    font-size: 12px; color: #3A3834;
+  }
+
+  .ink {
+    flex: none; height: 318px; background: #0C0C0C; color: #F4F4F1;
+    padding: 16px 16px 0 18px;
+    display: flex; flex-direction: column;
+  }
+  .k {
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.16em; color: #FF2B1A;
+  }
+  .coords {
+    margin-top: 4px;
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 22px; letter-spacing: -0.03em; line-height: 1.15;
+  }
+  .wifi { margin-top: 10px; font-size: 14px; font-weight: 700; }
+  .why { margin-top: 2px; font-size: 12px; color: rgba(244,244,241,.62); }
+
+  .stepper {
+    margin-top: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .stepper button {
+    width: 36px; height: 36px; background: transparent; color: #F4F4F1;
+    border: 1.5px solid #F4F4F1; font-size: 20px; font-family: inherit; line-height: 1;
+  }
+  .stepper .val { flex: 1; }
+  .stepper .val b {
+    font-family: "Noto Serif CJK TC", serif;
+    font-size: 22px; font-weight: 700;
+  }
+  .stepper .val span {
+    display: block; font-size: 11px; color: rgba(244,244,241,.55);
+  }
+
+  .perms {
+    margin-top: 12px; display: flex; gap: 10px;
+    font-size: 11px; color: rgba(244,244,241,.78);
+  }
+  .perms span { display: flex; align-items: center; gap: 4px; }
+  .perms i { width: 8px; height: 8px; background: #FF2B1A; display: block; }
+
+  .set {
+    margin-top: auto; height: 42px;
+    border: 1.5px solid #F4F4F1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  nav { height: 48px; flex: none; display: flex; }
+  nav a {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: rgba(244,244,241,.38);
+  }
+  nav a.on { color: #FF2B1A; }
+</style>
+</head>
+<body>
+  <aside class="spine"><span>在家安靜</span></aside>
+  <div class="col">
+    <section class="paper">
+      <div class="folio"><span>狀態</span><span>16:48 <span class="off">· 未暫停</span></span></div>
+      <h1>在家</h1>
+      <div class="numrow">
+        <div class="num">42</div>
+        <div class="unit"><b>公尺</b><span>距離住家</span></div>
+      </div>
+      <div class="scale">
+        <div class="bar"><div class="fill"></div><i></i></div>
+        <div class="scale-l"><span>你在 42 公尺</span><span>範圍 120</span></div>
+      </div>
+    </section>
+    <section class="ink">
+      <div class="k">住家 HOME</div>
+      <div class="coords">25.03396, 121.56542</div>
+      <div class="wifi">家裡-5G</div>
+      <div class="why">在範圍內，也連上住家 Wi-Fi</div>
+      <div class="stepper">
+        <button type="button" aria-label="縮小">−</button>
+        <div class="val"><b>120 公尺</b><span>安靜範圍 · 50–500</span></div>
+        <button type="button" aria-label="放大">+</button>
+      </div>
+      <div class="perms">
+        <span><i></i>通知</span>
+        <span><i></i>位置</span>
+        <span><i></i>背景</span>
+        <span><i></i>電池</span>
+      </div>
+      <div class="set">把目前位置設為家</div>
+      <nav>
+        <a class="on" href="status.html">狀態</a>
+        <a href="apps.html">應用</a>
+        <a href="log.html">紀錄</a>
+      </nav>
+    </section>
+  </div>
+</body>
+</html>

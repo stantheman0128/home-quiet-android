@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, height=844">
+<title>在家安靜 — 應用 · 現場儀器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px; height: 844px; margin: 0; overflow: hidden;
+    background: #E5DDD0; color: #171614;
+    font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { display: flex; flex-direction: column; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace; }
+
+  .top {
+    height: 36px; flex: none;
+    display: flex; align-items: center; gap: 8px; padding: 6px 14px 0;
+  }
+  .screw {
+    width: 13px; height: 13px; border-radius: 50%; flex: none;
+    background: radial-gradient(circle at 35% 30%, #F4EFE6, #B7AFA2 46%, #6E675C 78%);
+    box-shadow: inset 0 0 0 1px #5A544A, 0 1px 0 rgba(255,255,255,.55);
+    position: relative;
+  }
+  .screw::after {
+    content: ""; position: absolute; left: 2px; right: 2px; top: 5.5px; height: 1.5px;
+    background: #3E3A34; border-radius: 1px;
+  }
+  .clock { font-size: 12px; letter-spacing: 0.12em; }
+  .sp { flex: 1; }
+  .armed {
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 12px; letter-spacing: 0.12em; color: #FF4D1C;
+  }
+
+  .head { flex: none; padding: 6px 16px 8px; }
+  .head h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+  .head p { margin-top: 4px; font-size: 12px; line-height: 1.45; color: #6F685E; }
+
+  .search {
+    flex: none; height: 36px; margin: 0 14px;
+    background: #CFC7B8; border-radius: 6px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.16);
+    display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    color: #7A7268; font-size: 14px;
+  }
+  .search svg { flex: none; }
+
+  .filters {
+    flex: none; height: 32px; display: flex; align-items: flex-end; gap: 8px;
+    padding: 0 14px 4px;
+  }
+  .filters span {
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.14em; color: #7A7268;
+    padding-bottom: 4px;
+  }
+  .filters .on {
+    color: #171614;
+    box-shadow: inset 0 -2px 0 #FF4D1C;
+  }
+
+  .list {
+    flex: 1; min-height: 0; margin: 0 14px;
+    display: flex; flex-direction: column;
+    background: #DDD5C7; border-radius: 8px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.06);
+    overflow: hidden;
+  }
+  .row {
+    flex: 1; min-height: 0;
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 12px;
+    border-top: 1px solid rgba(23,22,20,.1);
+  }
+  .row:first-child { border-top: 0; }
+  .idx {
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 11px; color: #8A8276; width: 18px; flex: none;
+  }
+  .row.on .idx { color: #FF4D1C; }
+  .tx { flex: 1; min-width: 0; }
+  .nm { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .nm i {
+    font-style: normal;
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: 0.12em; font-weight: 400; color: #FF4D1C;
+  }
+  .pk {
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 10px; color: #7C756B;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .latch {
+    width: 48px; height: 24px; border-radius: 4px; flex: none; position: relative;
+    background: #2A2825; box-shadow: inset 0 2px 3px rgba(0,0,0,.45);
+  }
+  .latch b {
+    position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 2px;
+    background: linear-gradient(#F2EBE0, #C9C0B2);
+  }
+  .latch.on b { left: 27px; background: linear-gradient(#FF8A62, #FF4D1C); }
+
+  nav {
+    height: 76px; flex: none;
+    display: flex; gap: 8px; padding: 8px 14px 14px;
+  }
+  nav a {
+    flex: 1; border-radius: 8px;
+    background: linear-gradient(#F3EEE4, #DDD4C6);
+    box-shadow: 0 3px 0 #B7AE9F, inset 0 1px 0 rgba(255,255,255,.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 14px; font-weight: 700;
+  }
+  nav a em {
+    font-style: normal;
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: 0.16em; font-weight: 400; color: #7A7368;
+  }
+  nav a.on {
+    background: linear-gradient(#D2CBBE, #C9C1B3);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.16);
+    transform: translateY(2px);
+  }
+  nav a.on em { color: #FF4D1C; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <i class="screw"></i>
+    <span class="clock mono">16:48</span>
+    <span class="sp"></span>
+    <span class="armed">ARMED 04</span>
+    <i class="screw"></i>
+  </div>
+  <header class="head">
+    <h1>哪些通知要安靜</h1>
+    <p>人在家，或連上住家 Wi-Fi 時，打開的頻道會被清掉。預設已選 Grok Bot。</p>
+  </header>
+  <div class="search">
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <circle cx="6" cy="6" r="4.2" fill="none" stroke="#7A7268" stroke-width="1.4"/>
+      <path d="M9.2 9.2 L12 12" stroke="#7A7268" stroke-width="1.4" stroke-linecap="square"/>
+    </svg>
+    搜尋應用程式
+  </div>
+  <div class="filters"><span class="on">全部</span><span>已選</span></div>
+  <div class="list">
+    <div class="row on"><span class="idx">01</span><div class="tx"><div class="nm">Grok Bot <i>預設</i></div><div class="pk">ai.x.grok</div></div><span class="latch on"><b></b></span></div>
+    <div class="row on"><span class="idx">02</span><div class="tx"><div class="nm">LINE</div><div class="pk">jp.naver.line.android</div></div><span class="latch on"><b></b></span></div>
+    <div class="row"><span class="idx">03</span><div class="tx"><div class="nm">Instagram</div><div class="pk">com.instagram.android</div></div><span class="latch"><b></b></span></div>
+    <div class="row on"><span class="idx">04</span><div class="tx"><div class="nm">Slack</div><div class="pk">com.Slack</div></div><span class="latch on"><b></b></span></div>
+    <div class="row on"><span class="idx">05</span><div class="tx"><div class="nm">Gmail</div><div class="pk">com.google.android.gm</div></div><span class="latch on"><b></b></span></div>
+    <div class="row"><span class="idx">06</span><div class="tx"><div class="nm">Messenger</div><div class="pk">com.facebook.orca</div></div><span class="latch"><b></b></span></div>
+    <div class="row"><span class="idx">07</span><div class="tx"><div class="nm">WhatsApp</div><div class="pk">com.whatsapp</div></div><span class="latch"><b></b></span></div>
+    <div class="row"><span class="idx">08</span><div class="tx"><div class="nm">Telegram</div><div class="pk">org.telegram.messenger</div></div><span class="latch"><b></b></span></div>
+    <div class="row"><span class="idx">09</span><div class="tx"><div class="nm">YouTube</div><div class="pk">com.google.android.youtube</div></div><span class="latch"><b></b></span></div>
+    <div class="row"><span class="idx">10</span><div class="tx"><div class="nm">Discord</div><div class="pk">com.discord</div></div><span class="latch"><b></b></span></div>
+  </div>
+  <nav>
+    <a href="status.html"><em>01</em>狀態</a>
+    <a class="on" href="apps.html"><em>02</em>應用</a>
+    <a href="log.html"><em>03</em>紀錄</a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, height=844">
+<title>在家安靜 — 開始 · 海報安靜</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px; height: 844px; margin: 0; overflow: hidden;
+    background: #F4F4F1; color: #0C0C0C;
+    font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { display: flex; flex-direction: row; }
+  a { color: inherit; text-decoration: none; }
+  .serif { font-family: "Noto Serif CJK TC", "Noto Serif CJK", serif; }
+  .mono { font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace; }
+
+  .spine {
+    width: 56px; flex: none; background: #FF2B1A; color: #0C0C0C;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .spine::before {
+    content: ""; position: absolute; top: 18px; left: 21px;
+    width: 14px; height: 14px; background: #0C0C0C;
+  }
+  .spine span {
+    writing-mode: vertical-rl;
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 22px; letter-spacing: 0.38em;
+  }
+
+  .col { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #F4F4F1; }
+
+  .folio {
+    flex: none; height: 48px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 18px 8px;
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.14em;
+  }
+  .folio b { font-weight: 700; color: #FF2B1A; }
+
+  .stage { flex: 1; min-height: 0; padding: 8px 18px 0; display: flex; flex-direction: column; }
+
+  .ticks { display: flex; gap: 6px; }
+  .ticks i { width: 14px; height: 14px; background: #0C0C0C; display: block; }
+  .ticks i.on { background: #FF2B1A; }
+
+  h1 {
+    margin-top: 22px;
+    font-family: "Noto Serif CJK TC", serif;
+    font-weight: 700; font-size: 72px; line-height: 0.92; letter-spacing: -0.04em;
+  }
+  .rule { margin-top: 18px; height: 3px; width: 72px; background: #FF2B1A; }
+  .lead {
+    margin-top: 18px;
+    font-size: 16px; line-height: 1.65; font-weight: 400;
+  }
+  .sub {
+    margin-top: 12px;
+    font-size: 14px; line-height: 1.6; color: #5C5852;
+  }
+  .facts {
+    margin-top: auto; margin-bottom: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .facts div { display: flex; gap: 12px; align-items: baseline; }
+  .facts em {
+    font-style: normal;
+    font-family: "Noto Sans Mono CJK TC", ui-monospace, monospace;
+    font-size: 12px; width: 28px; color: #FF2B1A;
+  }
+  .facts span { font-size: 14px; }
+
+  .go {
+    flex: none; height: 92px; background: #0C0C0C; color: #F4F4F1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px;
+  }
+  .go b {
+    font-family: "Noto Serif CJK TC", serif;
+    font-size: 32px; font-weight: 700; letter-spacing: -0.03em;
+  }
+  .go i {
+    font-style: normal; font-size: 28px; color: #FF2B1A; font-weight: 700;
+  }
+</style>
+</head>
+<body>
+  <aside class="spine"><span>在家安靜</span></aside>
+  <div class="col">
+    <div class="folio"><span>開始</span><span><b>01</b> / 06</span></div>
+    <div class="stage">
+      <div class="ticks" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+      <h1>到家<br>就安靜</h1>
+      <div class="rule"></div>
+      <p class="lead">進入你設好的住家範圍時，在家安靜會清掉所選應用的通知。人一離開，通知恢復。</p>
+      <p class="sub">定位可以用 GPS，也可以用 Wi-Fi 或行動數據，不需要一直開著 Wi-Fi。</p>
+      <div class="facts">
+        <div><em>01</em><span>預設安靜 Grok Bot</span></div>
+        <div><em>02</em><span>範圍自己定，走出就停</span></div>
+        <div><em>03</em><span>沒開齊也能先進去</span></div>
+      </div>
+    </div>
+    <div class="go"><b>繼續</b><i>→</i></div>
+  </div>
+</body>
+</html>

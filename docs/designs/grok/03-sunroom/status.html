@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, height=844">
+<title>在家安靜 — 狀態 · 日光房</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 390px; height: 844px; margin: 0; overflow: hidden;
+    background: #E8D2B6; color: #1C2430;
+    font-family: "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { display: flex; flex-direction: column; }
+  a { color: inherit; text-decoration: none; }
+
+  .window { flex: none; height: 468px; padding: 12px 12px 0; display: flex; flex-direction: column; }
+  .sash { height: 8px; flex: none; background: #C4956A; }
+  .sky {
+    flex: 1; min-height: 0;
+    background: linear-gradient(180deg, #C5DFF6 0%, #E7F3FC 48%, #F6E2C0 100%);
+    border-radius: 22px 22px 0 0;
+    padding: 14px 18px 16px;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .folio {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .folio .name { font-weight: 400; color: #5E6A78; font-size: 12px; }
+  .pause {
+    font-size: 12px; color: #5E6A78;
+    border: 1px solid rgba(28,36,48,.2);
+    border-radius: 99px; padding: 3px 8px;
+  }
+  .sun { margin-top: 6px; }
+  .word {
+    margin-top: 2px; font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 1;
+  }
+  .dist {
+    margin-top: 2px; display: flex; align-items: flex-end; gap: 6px;
+  }
+  .dist b {
+    font-size: 64px; font-weight: 700; letter-spacing: -0.05em; line-height: 0.85; color: #E25B38;
+  }
+  .dist span { font-size: 14px; font-weight: 700; padding-bottom: 6px; }
+  .cap { margin-top: 4px; font-size: 13px; color: #3E4A5A; }
+
+  .sill {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 12px 16px 0;
+    box-shadow: inset 0 10px 16px rgba(90,50,20,.05);
+  }
+  .card {
+    flex: 1; min-height: 0;
+    background: #FFFBF6; border-radius: 20px;
+    padding: 14px 14px 12px;
+    box-shadow: 0 10px 24px rgba(80,50,20,.08);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .rl { display: flex; justify-content: space-between; align-items: baseline; }
+  .rl b { font-size: 15px; }
+  .rl span { font-size: 12px; color: #6A6258; }
+  .slider { height: 28px; position: relative; }
+  .track, .fill {
+    position: absolute; top: 11px; height: 6px; border-radius: 99px;
+  }
+  .track { left: 0; right: 0; background: #EFE4D6; }
+  .fill { left: 0; width: 15.56%; background: #E25B38; }
+  .thumb {
+    position: absolute; left: 15.56%; top: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 2px solid #E25B38;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 6px rgba(80,40,20,.16);
+  }
+  .ends { display: flex; justify-content: space-between; font-size: 11px; color: #8A7B6C; margin-top: -6px; }
+
+  .wifi {
+    display: flex; align-items: center; gap: 10px;
+    background: #F7F1E8; border-radius: 14px; padding: 8px 10px;
+  }
+  .wifi .tx { flex: 1; min-width: 0; }
+  .wifi b { display: block; font-size: 14px; }
+  .wifi span { display: block; font-size: 12px; color: #6A6258; margin-top: 1px; }
+  .tog { width: 46px; height: 28px; border-radius: 99px; background: #E25B38; position: relative; flex: none; }
+  .tog i {
+    position: absolute; top: 3px; left: 21px; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .home {
+    display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .home span { color: #6A6258; }
+  .set {
+    height: 42px; border-radius: 12px; background: #1C2430; color: #FFFBF6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .ok { text-align: center; font-size: 11px; color: #6A6258; }
+
+  nav {
+    height: 64px; flex: none;
+    display: flex; align-items: center; padding: 0 8px 6px;
+  }
+  nav a {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 700; color: #8A7564;
+  }
+  nav a.on { color: #1C2430; }
+  nav a.on svg { stroke: #E25B38; }
+  .dot {
+    width: 4px; height: 4px; border-radius: 50%; background: transparent;
+  }
+  nav a.on .dot { background: #E25B38; }
+</style>
+</head>
+<body>
+  <div class="window">
+    <section class="sky">
+      <div class="folio">
+        <span>16:48</span>
+        <span class="name">在家安靜</span>
+        <span class="pause">暫停</span>
+      </div>
+      <svg class="sun" width="188" height="188" viewBox="0 0 188 188" aria-hidden="true">
+        <defs>
+          <radialGradient id="sun" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#FFF6E4"/>
+            <stop offset="50%" stop-color="#FFC56A"/>
+            <stop offset="100%" stop-color="#F0993C"/>
+          </radialGradient>
+        </defs>
+        <circle cx="94" cy="94" r="86" fill="none" stroke="#1C2430" stroke-opacity="0.28" stroke-width="1.5" stroke-dasharray="1.6 4.2"/>
+        <circle cx="94" cy="94" r="36" fill="url(#sun)"/>
+        <circle cx="94" cy="94" r="2.4" fill="#1C2430" opacity="0.4"/>
+        <circle cx="94" cy="64" r="6.5" fill="#E25B38" stroke="#FFFBF6" stroke-width="3"/>
+      </svg>
+      <div class="word">在家</div>
+      <div class="dist"><b>42</b><span>公尺</span></div>
+      <div class="cap">在範圍內，也連上住家 Wi-Fi</div>
+    </section>
+    <div class="sash"></div>
+  </div>
+  <section class="sill">
+    <div class="card">
+      <div class="rl"><b>安靜範圍</b><span>120 公尺</span></div>
+      <div class="slider">
+        <div class="track"></div>
+        <div class="fill"></div>
+        <div class="thumb"></div>
+      </div>
+      <div class="ends"><span>50</span><span>500</span></div>
+      <div class="wifi">
+        <div class="tx"><b>家裡-5G</b><span>連上住家 Wi-Fi 也算在家</span></div>
+        <div class="tog" aria-label="已開啟"><i></i></div>
+      </div>
+      <div class="home"><span>住家</span><b>25.03396, 121.56542</b></div>
+      <div class="set">把目前位置設為家</div>
+      <div class="ok">通知 · 位置 · 背景 · 電池　都已允許</div>
+    </div>
+    <nav>
+      <a class="on" href="status.html">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1C2430" stroke-width="1.6"><circle cx="9" cy="9" r="3.2"/><circle cx="9" cy="9" r="6.5" stroke-dasharray="1.4 2.2"/></svg>
+        狀態<span class="dot"></span>
+      </a>
+      <a href="apps.html">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#8A7564" stroke-width="1.6"><rect x="3" y="3" width="5" height="5" rx="1.4"/><rect x="10" y="3" width="5" height="5" rx="1.4"/><rect x="3" y="10" width="5" height="5" rx="1.4"/><rect x="10" y="10" width="5" height="5" rx="1.4"/></svg>
+        應用<span class="dot"></span>
+      </a>
+      <a href="log.html">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#8A7564" stroke-width="1.6"><path d="M4 5h10M4 9h10M4 13h7"/></svg>
+        紀錄<span class="dot"></span>
+      </a>
+    </nav>
+  </section>
+</body>
+</html>
